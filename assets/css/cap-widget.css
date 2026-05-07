@@ -1,0 +1,55 @@
+/*
+ * Cap widget — feuille de styles publiable
+ *
+ * Ce fichier est publié dans public/vendor/cap/cap-widget.css
+ * et chargé via la directive @capStyles dans votre layout.
+ *
+ * Les variables CSS s'appliquent à l'élément <cap-widget> et
+ * traversent le Shadow DOM du widget.
+ *
+ * Personnalisez les valeurs ci-dessous pour adapter le widget
+ * à votre charte graphique.
+ *
+ * Palette URG : rouge #ed1a23, gris #374151
+ */
+
+cap-widget {
+    /* ── Conteneur ────────────────────────────────────────── */
+    --cap-background:       #ffffff;
+    --cap-border-color:     #d8d9da;        /* urg_gray-300     */
+    --cap-border-radius:    8px;
+    --cap-widget-width:     250px;
+    --cap-widget-height:    58px;
+    --cap-widget-padding:   14px;
+    --cap-gap:              12px;
+
+    /* ── Texte ────────────────────────────────────────────── */
+    --cap-color:            #374151;        /* urg_gray-700     */
+    --cap-font:             inherit;
+
+    /* ── Case à cocher ────────────────────────────────────── */
+    --cap-checkbox-size:              24px;
+    --cap-checkbox-margin:            2px;
+    --cap-checkbox-background:        #f9f9f9;     /* urg_gray-50  */
+    --cap-checkbox-border:            1px solid #d8d9da; /* urg_gray-300 */
+    --cap-checkbox-border-radius:     5px;
+
+    /* ── Spinner — couleur primaire URG ───────────────────── */
+    --cap-spinner-color:              #ed1a23;     /* urg_red-600  */
+    --cap-spinner-background-color:   #eaeaea;     /* urg_gray-200 */
+    --cap-spinner-thickness:          3;
+
+    /* ── État invalide ────────────────────────────────────── */
+    --cap-invalid-border-color:       #ed1a23;     /* urg_red-600  */
+    --cap-invalid-ring-color:         #ed1a2333;   /* urg_red-600 / 20% */
+}
+
+/* ── Lien d'attribution Cap (optionnel) ───────────────────────────────
+ * Le widget affiche un lien "Cap" pointant vers trycap.dev.
+ * La licence Apache 2.0 n'exige pas son affichage dans l'interface.
+ * Décommentez le bloc ci-dessous pour le masquer.
+ *
+ * cap-widget::part(attribution) {
+ *     display: none;
+ * }
+ */
