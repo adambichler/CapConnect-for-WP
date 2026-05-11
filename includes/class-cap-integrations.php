@@ -6,15 +6,15 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Cap_Integrations
+class Tpow_Integrations
 {
-    private Cap_Verifier $verifier;
-    private Cap_Widget $widget;
+    private Tpow_Verifier $verifier;
+    private Tpow_Widget $widget;
 
     public function __construct()
     {
-        $this->verifier = new Cap_Verifier();
-        $this->widget   = new Cap_Widget();
+        $this->verifier = new Tpow_Verifier();
+        $this->widget   = new Tpow_Widget();
     }
 
     public function init(): void
@@ -23,6 +23,7 @@ class Cap_Integrations
         $this->initLoginIntegration();
         $this->initRegisterIntegration();
         $this->initWooCommerceIntegration();
+        $this->initGravityFormsIntegration();
     }
 
     private function initCommentIntegration(): void
@@ -51,6 +52,16 @@ class Cap_Integrations
 
         add_action('woocommerce_after_checkout_billing_form', [$this, 'renderWidgetCheckout']);
         add_action('woocommerce_checkout_process', [$this, 'validateCheckoutToken']);
+    }
+
+    private function initGravityFormsIntegration(): void
+    {
+        if (! $this->isGravityFormsActive()) {
+            return;
+        }
+
+        add_filter('gform_submit_button', [$this, 'renderWidgetGravityForms'], 10, 2);
+        add_filter('gform_validation', [$this, 'validateGravityFormsToken']);
     }
 
     public function renderWidgetComment(): void
@@ -83,8 +94,8 @@ class Cap_Integrations
 
         if (! $this->verifier->verify($token)) {
             wp_die(
-                esc_html__('Cap verification failed. Please complete the challenge and try again.', 'wordpress-cap'),
-                esc_html__('Cap Verification Failed', 'wordpress-cap'),
+                esc_html__('Cap verification failed. Please complete the challenge and try again.', 'tilivier-pow-for-cap'),
+                esc_html__('Cap Verification Failed', 'tilivier-pow-for-cap'),
                 ['response' => 403, 'back_link' => true]
             );
         }
@@ -102,8 +113,8 @@ class Cap_Integrations
 
         if (! $this->verifier->verify($token)) {
             return new \WP_Error(
-                'cap_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'wordpress-cap')
+                'tpow_verification_failed',
+                __('Cap verification failed. Please complete the challenge and try again.', 'tilivier-pow-for-cap')
             );
         }
 
@@ -116,8 +127,8 @@ class Cap_Integrations
 
         if (! $this->verifier->verify($token)) {
             $errors->add(
-                'cap_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'wordpress-cap')
+                'tpow_verification_failed',
+                __('Cap verification failed. Please complete the challenge and try again.', 'tilivier-pow-for-cap')
             );
         }
 
@@ -130,21 +141,53 @@ class Cap_Integrations
 
         if (! $this->verifier->verify($token)) {
             wc_add_notice(
-                __('Cap verification failed. Please complete the challenge and try again.', 'wordpress-cap'),
+                __('Cap verification failed. Please complete the challenge and try again.', 'tilivier-pow-for-cap'),
                 'error'
             );
         }
     }
 
+    public function renderWidgetGravityForms(string $button, array $form): string
+    {
+        $this->widget->enqueueAssets();
+
+        return $this->widget->renderWidget() . $button;
+    }
+
+    public function validateGravityFormsToken(array $validationResult): array
+    {
+        $token = $this->getToken();
+
+        if (! $this->verifier->verify($token)) {
+            $validationResult['is_valid'] = false;
+
+            $formId = (int) $validationResult['form']['id'];
+            add_filter(
+                "gform_validation_message_{$formId}",
+                fn(string $message): string => '<div class="validation_error">'
+                    . esc_html__('Cap verification failed. Please complete the challenge and try again.', 'tilivier-pow-for-cap')
+                    . '</div>'
+            );
+        }
+
+        return $validationResult;
+    }
+
     private function getToken(): string
     {
-        $field = (string) get_option('cap_token_field', 'cap-token');
+        $field = (string) get_option('tpow_token_field', 'cap-token');
 
-        return sanitize_text_field((string) ($_POST[$field] ?? ''));
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the surrounding WordPress/WooCommerce context before this hook runs.
+        return sanitize_text_field(wp_unslash((string) ($_POST[$field] ?? '')));
     }
 
     private function isWooCommerceActive(): bool
     {
         return class_exists('WooCommerce');
+    }
+
+    private function isGravityFormsActive(): bool
+    {
+        return class_exists('GFForms');
     }
 }

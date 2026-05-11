@@ -6,7 +6,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Cap_Settings
+class Tpow_Settings
 {
     public function init(): void
     {
@@ -17,91 +17,91 @@ class Cap_Settings
     public function addMenuPage(): void
     {
         add_options_page(
-            __('Cap CAPTCHA Settings', 'wordpress-cap'),
-            __('Cap CAPTCHA', 'wordpress-cap'),
+            __('tilivier Proof-of-Work for Cap — Settings', 'tilivier-pow-for-cap'),
+            __('PoW for Cap', 'tilivier-pow-for-cap'),
             'manage_options',
-            'cap-captcha',
+            'tpow-settings',
             [$this, 'renderPage']
         );
     }
 
     public function registerSettings(): void
     {
-        register_setting('cap_settings_group', 'cap_endpoint', [
+        register_setting('tpow_settings_group', 'tpow_endpoint', [
             'type'              => 'string',
             'sanitize_callback' => 'esc_url_raw',
             'default'           => '',
         ]);
 
-        register_setting('cap_settings_group', 'cap_secret', [
+        register_setting('tpow_settings_group', 'tpow_secret', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('cap_settings_group', 'cap_token_field', [
+        register_setting('tpow_settings_group', 'tpow_token_field', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_key',
             'default'           => 'cap-token',
         ]);
 
-        register_setting('cap_settings_group', 'cap_timeout', [
+        register_setting('tpow_settings_group', 'tpow_timeout', [
             'type'              => 'integer',
             'sanitize_callback' => 'absint',
             'default'           => 5,
         ]);
 
-        register_setting('cap_settings_group', 'cap_fail_open', [
+        register_setting('tpow_settings_group', 'tpow_fail_open', [
             'type'              => 'boolean',
-            'sanitize_callback' => fn($v) => (bool) $v,
+            'sanitize_callback' => 'boolval',
             'default'           => false,
         ]);
 
         add_settings_section(
-            'cap_main_section',
-            __('Cap Instance', 'wordpress-cap'),
+            'tpow_main_section',
+            __('Cap Instance', 'tilivier-pow-for-cap'),
             null,
-            'cap-captcha'
+            'tpow-settings'
         );
 
         add_settings_field(
-            'cap_endpoint',
-            __('Endpoint URL', 'wordpress-cap'),
+            'tpow_endpoint',
+            __('Endpoint URL', 'tilivier-pow-for-cap'),
             [$this, 'renderEndpointField'],
-            'cap-captcha',
-            'cap_main_section'
+            'tpow-settings',
+            'tpow_main_section'
         );
 
         add_settings_field(
-            'cap_secret',
-            __('Secret Key', 'wordpress-cap'),
+            'tpow_secret',
+            __('Secret Key', 'tilivier-pow-for-cap'),
             [$this, 'renderSecretField'],
-            'cap-captcha',
-            'cap_main_section'
+            'tpow-settings',
+            'tpow_main_section'
         );
 
         add_settings_field(
-            'cap_token_field',
-            __('Token Field Name', 'wordpress-cap'),
+            'tpow_token_field',
+            __('Token Field Name', 'tilivier-pow-for-cap'),
             [$this, 'renderTokenFieldField'],
-            'cap-captcha',
-            'cap_main_section'
+            'tpow-settings',
+            'tpow_main_section'
         );
 
         add_settings_field(
-            'cap_timeout',
-            __('Timeout (seconds)', 'wordpress-cap'),
+            'tpow_timeout',
+            __('Timeout (seconds)', 'tilivier-pow-for-cap'),
             [$this, 'renderTimeoutField'],
-            'cap-captcha',
-            'cap_main_section'
+            'tpow-settings',
+            'tpow_main_section'
         );
 
         add_settings_field(
-            'cap_fail_open',
-            __('Fail Open', 'wordpress-cap'),
+            'tpow_fail_open',
+            __('Fail Open', 'tilivier-pow-for-cap'),
             [$this, 'renderFailOpenField'],
-            'cap-captcha',
-            'cap_main_section'
+            'tpow-settings',
+            'tpow_main_section'
         );
     }
 
@@ -115,9 +115,9 @@ class Cap_Settings
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             <form method="post" action="options.php">
                 <?php
-                settings_fields('cap_settings_group');
-                do_settings_sections('cap-captcha');
-                submit_button(__('Save Settings', 'wordpress-cap'));
+                settings_fields('tpow_settings_group');
+                do_settings_sections('tpow-settings');
+                submit_button(__('Save Settings', 'tilivier-pow-for-cap'));
                 ?>
             </form>
         </div>
@@ -126,36 +126,36 @@ class Cap_Settings
 
     public function renderEndpointField(): void
     {
-        $value = get_option('cap_endpoint', '');
-        echo '<input type="url" name="cap_endpoint" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com/your-site-key/" />';
-        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'wordpress-cap') . '</p>';
+        $value = get_option('tpow_endpoint', '');
+        echo '<input type="url" name="tpow_endpoint" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com/your-site-key/" />';
+        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'tilivier-pow-for-cap') . '</p>';
     }
 
     public function renderSecretField(): void
     {
-        $value = get_option('cap_secret', '');
-        echo '<input type="password" name="cap_secret" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'wordpress-cap') . '</p>';
+        $value = get_option('tpow_secret', '');
+        echo '<input type="password" name="tpow_secret" value="' . esc_attr($value) . '" class="regular-text" />';
+        echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'tilivier-pow-for-cap') . '</p>';
     }
 
     public function renderTokenFieldField(): void
     {
-        $value = get_option('cap_token_field', 'cap-token');
-        echo '<input type="text" name="cap_token_field" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'wordpress-cap') . '</p>';
+        $value = get_option('tpow_token_field', 'cap-token');
+        echo '<input type="text" name="tpow_token_field" value="' . esc_attr($value) . '" class="regular-text" />';
+        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'tilivier-pow-for-cap') . '</p>';
     }
 
     public function renderTimeoutField(): void
     {
-        $value = (int) get_option('cap_timeout', 5);
-        echo '<input type="number" name="cap_timeout" value="' . esc_attr((string) $value) . '" min="1" max="30" class="small-text" />';
-        echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'wordpress-cap') . '</p>';
+        $value = (int) get_option('tpow_timeout', 5);
+        echo '<input type="number" name="tpow_timeout" value="' . esc_attr((string) $value) . '" min="1" max="30" class="small-text" />';
+        echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'tilivier-pow-for-cap') . '</p>';
     }
 
     public function renderFailOpenField(): void
     {
-        $value = (bool) get_option('cap_fail_open', false);
-        echo '<label><input type="checkbox" name="cap_fail_open" value="1"' . checked($value, true, false) . ' /> ';
-        echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'wordpress-cap') . '</label>';
+        $value = (bool) get_option('tpow_fail_open', false);
+        echo '<label><input type="checkbox" name="tpow_fail_open" value="1"' . checked($value, true, false) . ' /> ';
+        echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'tilivier-pow-for-cap') . '</label>';
     }
 }

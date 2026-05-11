@@ -77,8 +77,9 @@ Le plugin s'intègre automatiquement aux formulaires WordPress suivants dès l'a
 | Connexion | `login_form` | `wp_authenticate_user` |
 | Inscription | `register_form` | `registration_errors` |
 | WooCommerce checkout | `woocommerce_after_checkout_billing_form` | `woocommerce_checkout_process` |
+| Gravity Forms | `gform_submit_button` | `gform_validation` |
 
-L'intégration WooCommerce n'est active que si WooCommerce est installé et activé.
+Les intégrations WooCommerce et Gravity Forms ne sont actives que si les plugins correspondants sont installés et activés.
 
 ---
 

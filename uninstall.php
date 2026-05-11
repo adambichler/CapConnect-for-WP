@@ -8,8 +8,8 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
     exit;
 }
 
-delete_option('cap_endpoint');
-delete_option('cap_secret');
-delete_option('cap_token_field');
-delete_option('cap_timeout');
-delete_option('cap_fail_open');
+delete_option('tpow_endpoint');
+delete_option('tpow_secret');
+delete_option('tpow_token_field');
+delete_option('tpow_timeout');
+delete_option('tpow_fail_open');

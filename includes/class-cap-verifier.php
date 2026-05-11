@@ -6,7 +6,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Cap_Verifier
+class Tpow_Verifier
 {
     public function verify(string $token): bool
     {
@@ -38,21 +38,21 @@ class Cap_Verifier
 
     private function siteVerifyUrl(): string
     {
-        return rtrim((string) get_option('cap_endpoint', ''), '/') . '/siteverify';
+        return rtrim((string) get_option('tpow_endpoint', ''), '/') . '/siteverify';
     }
 
     private function secret(): string
     {
-        return (string) get_option('cap_secret', '');
+        return (string) get_option('tpow_secret', '');
     }
 
     private function timeout(): int
     {
-        return (int) get_option('cap_timeout', 5);
+        return (int) get_option('tpow_timeout', 5);
     }
 
     private function failOpen(): bool
     {
-        return (bool) get_option('cap_fail_open', false);
+        return (bool) get_option('tpow_fail_open', false);
     }
 }
