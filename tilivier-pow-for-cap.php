@@ -29,6 +29,10 @@ require_once TPOW_PLUGIN_DIR . 'includes/class-cap-settings.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-widget.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-integrations.php';
 
+add_action('plugins_loaded', function () {
+    load_plugin_textdomain('tilivier-pow-for-cap', false, dirname(plugin_basename(__FILE__)) . '/languages');
+});
+
 (new Tpow_Settings())->init();
 (new Tpow_Widget())->init();
 (new Tpow_Integrations())->init();
