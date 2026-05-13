@@ -1,0 +1,135 @@
+# Copyright (C) 2025 tilivier
+# This file is distributed under the MIT License.
+msgid ""
+msgstr ""
+"Project-Id-Version: tilivier Proof-of-Work for Cap 1.1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/oli217/wordpress-cap/issues\n"
+"POT-Creation-Date: 2026-05-13T00:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2026-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Generator: manual\n"
+"X-Domain: tilivier-pow-for-cap\n"
+
+#: includes/class-cap-widget.php:54
+msgid "Verify you're human"
+msgstr ""
+
+#: includes/class-cap-widget.php:55
+msgid "Please verify you're human"
+msgstr ""
+
+#: includes/class-cap-widget.php:56
+msgid "Verifying..."
+msgstr ""
+
+#: includes/class-cap-widget.php:57
+msgid "Verifying you're a human, please wait"
+msgstr ""
+
+#: includes/class-cap-widget.php:58
+msgid "We have verified you're a human, you may now continue"
+msgstr ""
+
+#: includes/class-cap-widget.php:59
+msgid "Error"
+msgstr ""
+
+#: includes/class-cap-widget.php:60
+msgid "An error occurred, please try again"
+msgstr ""
+
+#: includes/class-cap-widget.php:61
+msgid "Enable WASM for significantly faster solving"
+msgstr ""
+
+#: includes/class-cap-widget.php:62
+msgid "Click to verify you're a human"
+msgstr ""
+
+#: includes/class-cap-widget.php:63
+msgid "Troubleshoot"
+msgstr ""
+
+#: includes/class-cap-widget.php:64
+msgid "You're a human"
+msgstr ""
+
+#: includes/class-cap-settings.php:20
+msgid "tilivier Proof-of-Work for Cap — Settings"
+msgstr ""
+
+#: includes/class-cap-settings.php:21
+msgid "PoW for Cap"
+msgstr ""
+
+#: includes/class-cap-settings.php:68
+msgid "Cap Instance"
+msgstr ""
+
+#: includes/class-cap-settings.php:75
+msgid "Endpoint URL"
+msgstr ""
+
+#: includes/class-cap-settings.php:83
+msgid "Secret Key"
+msgstr ""
+
+#: includes/class-cap-settings.php:91
+msgid "Token Field Name"
+msgstr ""
+
+#: includes/class-cap-settings.php:99
+msgid "Timeout (seconds)"
+msgstr ""
+
+#: includes/class-cap-settings.php:107
+msgid "Fail Open"
+msgstr ""
+
+#: includes/class-cap-settings.php:115
+msgid "Hide Attribution Link"
+msgstr ""
+
+#: includes/class-cap-settings.php:134
+msgid "Save Settings"
+msgstr ""
+
+#: includes/class-cap-settings.php:145
+msgid "Full URL of your self-hosted Cap instance, including the site key."
+msgstr ""
+
+#: includes/class-cap-settings.php:152
+msgid "The secret key from your Cap dashboard. Never expose this publicly."
+msgstr ""
+
+#: includes/class-cap-settings.php:159
+msgid "The name of the hidden field injected by the Cap widget."
+msgstr ""
+
+#: includes/class-cap-settings.php:166
+msgid "Seconds before abandoning the request to /siteverify."
+msgstr ""
+
+#: includes/class-cap-settings.php:173
+msgid "Allow requests through when the Cap server is unreachable (not recommended for high-security forms)."
+msgstr ""
+
+#: includes/class-cap-settings.php:180
+msgid "Hide the \"Cap\" link displayed in the bottom-right corner of the widget."
+msgstr ""
+
+#: includes/class-cap-integrations.php:97
+#: includes/class-cap-integrations.php:117
+#: includes/class-cap-integrations.php:131
+#: includes/class-cap-integrations.php:144
+#: includes/class-cap-integrations.php:168
+msgid "Cap verification failed. Please complete the challenge and try again."
+msgstr ""
+
+#: includes/class-cap-integrations.php:98
+msgid "Cap Verification Failed"
+msgstr ""
