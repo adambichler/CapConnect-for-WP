@@ -57,6 +57,12 @@ class Tpow_Settings
             'default'           => false,
         ]);
 
+        register_setting('tpow_settings_group', 'tpow_hide_attribution', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => false,
+        ]);
+
         add_settings_section(
             'tpow_main_section',
             __('Cap Instance', 'tilivier-pow-for-cap'),
@@ -100,6 +106,14 @@ class Tpow_Settings
             'tpow_fail_open',
             __('Fail Open', 'tilivier-pow-for-cap'),
             [$this, 'renderFailOpenField'],
+            'tpow-settings',
+            'tpow_main_section'
+        );
+
+        add_settings_field(
+            'tpow_hide_attribution',
+            __('Hide Attribution Link', 'tilivier-pow-for-cap'),
+            [$this, 'renderHideAttributionField'],
             'tpow-settings',
             'tpow_main_section'
         );
@@ -157,5 +171,12 @@ class Tpow_Settings
         $value = (bool) get_option('tpow_fail_open', false);
         echo '<label><input type="checkbox" name="tpow_fail_open" value="1"' . checked($value, true, false) . ' /> ';
         echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'tilivier-pow-for-cap') . '</label>';
+    }
+
+    public function renderHideAttributionField(): void
+    {
+        $value = (bool) get_option('tpow_hide_attribution', false);
+        echo '<label><input type="checkbox" name="tpow_hide_attribution" value="1"' . checked($value, true, false) . ' /> ';
+        echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'tilivier-pow-for-cap') . '</label>';
     }
 }

@@ -3,7 +3,7 @@
  * Plugin Name:       tilivier Proof-of-Work for Cap
  * Plugin URI:        https://github.com/oli217/wordpress-cap
  * Description:       Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, login, registration, and WooCommerce checkout.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            tilivier
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('TPOW_VERSION', '1.0.0');
+define('TPOW_VERSION', '1.1.0');
 define('TPOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('TPOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 

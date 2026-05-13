@@ -35,6 +35,10 @@ class Tpow_Widget
             [],
             TPOW_VERSION
         );
+
+        if (get_option('tpow_hide_attribution', false)) {
+            wp_add_inline_style('tpow-widget', 'cap-widget::part(attribution){display:none}');
+        }
     }
 
     public function renderWidget(?string $nonce = null): string
@@ -44,6 +48,24 @@ class Tpow_Widget
 
         if ($nonce !== null) {
             $attrs .= ' data-cap-csp-nonce="' . esc_attr($nonce) . '"';
+        }
+
+        $i18n = [
+            'initial-state'        => __("Verify you're human", 'tilivier-pow-for-cap'),
+            'required-label'       => __("Please verify you're human", 'tilivier-pow-for-cap'),
+            'verifying-label'      => __('Verifying...', 'tilivier-pow-for-cap'),
+            'verifying-aria-label' => __("Verifying you're a human, please wait", 'tilivier-pow-for-cap'),
+            'verified-aria-label'  => __("We have verified you're a human, you may now continue", 'tilivier-pow-for-cap'),
+            'error-label'          => __('Error', 'tilivier-pow-for-cap'),
+            'error-aria-label'     => __('An error occurred, please try again', 'tilivier-pow-for-cap'),
+            'wasm-disabled'        => __('Enable WASM for significantly faster solving', 'tilivier-pow-for-cap'),
+            'verify-aria-label'    => __("Click to verify you're a human", 'tilivier-pow-for-cap'),
+            'troubleshooting-label' => __('Troubleshoot', 'tilivier-pow-for-cap'),
+            'solved-label'         => __("You're a human", 'tilivier-pow-for-cap'),
+        ];
+
+        foreach ($i18n as $key => $text) {
+            $attrs .= ' data-cap-i18n-' . $key . '="' . esc_attr($text) . '"';
         }
 
         return '<cap-widget ' . $attrs . '></cap-widget>';
