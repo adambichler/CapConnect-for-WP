@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -79,6 +79,10 @@ Yes. If Gravity Forms is active, the Cap widget is automatically prepended to th
 Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 
 == Changelog ==
+
+= 1.1.0 =
+* Widget i18n: all Cap widget labels are now translated via WordPress translation system (data-cap-i18n-* attributes)
+* New setting: Hide Attribution Link — hides the "Cap" link in the bottom-right corner of the widget
 
 = 1.0.0 =
 * Initial release
