@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -32,6 +32,7 @@ The Cap widget uses a WebAssembly (WASM) module to perform the proof-of-work com
 * Protects WooCommerce checkout (if WooCommerce is active)
 * Protects Gravity Forms (if Gravity Forms is active)
 * Shortcode `[tpow_widget]` for use in any page or form builder
+* Shortcode `[tpow_programmatic]` for programmatic Cap usage (headless mode)
 * Settings page under **Settings > PoW for Cap**
 * Fail-open mode: lets requests through if the Cap server is unreachable
 * No external dependencies — uses native WordPress HTTP API and bundled WASM
@@ -79,6 +80,10 @@ Yes. If Gravity Forms is active, the Cap widget is automatically prepended to th
 Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 
 == Changelog ==
+
+= 1.2.0 =
+* Mode programmatic : injection de `window.TPOW_CONFIG` (apiEndpoint, tokenField) via `enqueueAssets()`
+* Nouveau shortcode `[tpow_programmatic]` : charge les assets et insère un champ hidden prêt à recevoir le token résolu via `new Cap({...})`
 
 = 1.1.0 =
 * Widget i18n: all Cap widget labels are now translated via WordPress translation system (data-cap-i18n-* attributes)

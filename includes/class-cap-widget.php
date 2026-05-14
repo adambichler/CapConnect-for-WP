@@ -11,6 +11,7 @@ class Tpow_Widget
     public function init(): void
     {
         add_shortcode('tpow_widget', [$this, 'renderShortcode']);
+        add_shortcode('tpow_programmatic', [$this, 'renderProgrammaticShortcode']);
     }
 
     public function enqueueAssets(): void
@@ -25,7 +26,11 @@ class Tpow_Widget
 
         wp_add_inline_script(
             'tpow-widget',
-            'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(TPOW_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';',
+            'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(TPOW_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';'
+            . 'window.TPOW_CONFIG = ' . wp_json_encode([
+                'apiEndpoint' => (string) get_option('tpow_endpoint', ''),
+                'tokenField'  => (string) get_option('tpow_token_field', 'cap-token'),
+            ]) . ';',
             'before'
         );
 
@@ -78,5 +83,29 @@ class Tpow_Widget
         $this->enqueueAssets();
 
         return $this->renderWidget($atts['nonce'] ?: null);
+    }
+
+    /**
+     * Shortcode [tpow_programmatic] pour le mode programmatic Cap.
+     *
+     * Charge les assets (JS/CSS/WASM + window.TPOW_CONFIG) et insère
+     * un champ hidden prêt à recevoir le token résolu via new Cap({...}).
+     *
+     * Attributs :
+     *   field : nom du champ hidden (défaut : cap-token)
+     *   id    : id HTML du champ   (défaut : tpow-token)
+     *
+     * Exemple JS :
+     *   const cap = new Cap({ apiEndpoint: window.TPOW_CONFIG.apiEndpoint });
+     *   const { token } = await cap.solve();
+     *   document.getElementById('tpow-token').value = token;
+     */
+    public function renderProgrammaticShortcode(array $atts): string
+    {
+        $atts = shortcode_atts(['field' => 'cap-token', 'id' => 'tpow-token'], $atts, 'tpow_programmatic');
+
+        $this->enqueueAssets();
+
+        return '<input type="hidden" name="' . esc_attr($atts['field']) . '" id="' . esc_attr($atts['id']) . '">';
     }
 }
