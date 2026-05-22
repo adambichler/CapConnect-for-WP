@@ -1,16 +1,16 @@
 <?php
 /**
- * Plugin Name:       tilivier Proof-of-Work for Cap
- * Plugin URI:        https://github.com/oli217/wordpress-cap
+ * Plugin Name:       OliWeb Proof-of-Work for Cap
+ * Plugin URI:        https://github.com/oli217/oliweb-proof-of-work-for-cap
  * Description:       Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, login, registration, and WooCommerce checkout.
  * Version:           1.2.0
  * Requires at least: 6.4
  * Requires PHP:      8.2
- * Author:            tilivier
- * Author URI:        https://github.com/oli217
+ * Author:            OliWeb
+ * Author URI:        https://oliweb.ch
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
- * Text Domain:       tilivier-proof-of-work-for-cap
+ * Text Domain:       oliweb-proof-of-work-for-cap
  * Domain Path:       /languages
  */
 

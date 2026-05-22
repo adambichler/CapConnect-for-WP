@@ -94,8 +94,8 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             wp_die(
-                esc_html__('Cap verification failed. Please complete the challenge and try again.', 'tilivier-proof-of-work-for-cap'),
-                esc_html__('Cap Verification Failed', 'tilivier-proof-of-work-for-cap'),
+                esc_html__('Cap verification failed. Please complete the challenge and try again.', 'oliweb-proof-of-work-for-cap'),
+                esc_html__('Cap Verification Failed', 'oliweb-proof-of-work-for-cap'),
                 ['response' => 403, 'back_link' => true]
             );
         }
@@ -114,7 +114,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             return new \WP_Error(
                 'tpow_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'tilivier-proof-of-work-for-cap')
+                __('Cap verification failed. Please complete the challenge and try again.', 'oliweb-proof-of-work-for-cap')
             );
         }
 
@@ -128,7 +128,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             $errors->add(
                 'tpow_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'tilivier-proof-of-work-for-cap')
+                __('Cap verification failed. Please complete the challenge and try again.', 'oliweb-proof-of-work-for-cap')
             );
         }
 
@@ -141,7 +141,7 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             wc_add_notice(
-                __('Cap verification failed. Please complete the challenge and try again.', 'tilivier-proof-of-work-for-cap'),
+                __('Cap verification failed. Please complete the challenge and try again.', 'oliweb-proof-of-work-for-cap'),
                 'error'
             );
         }
@@ -165,7 +165,7 @@ class Tpow_Integrations
             add_filter(
                 "gform_validation_message_{$formId}",
                 fn(string $message): string => '<div class="validation_error">'
-                    . esc_html__('Cap verification failed. Please complete the challenge and try again.', 'tilivier-proof-of-work-for-cap')
+                    . esc_html__('Cap verification failed. Please complete the challenge and try again.', 'oliweb-proof-of-work-for-cap')
                     . '</div>'
             );
         }

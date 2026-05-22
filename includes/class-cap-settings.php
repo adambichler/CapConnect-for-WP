@@ -17,8 +17,8 @@ class Tpow_Settings
     public function addMenuPage(): void
     {
         add_options_page(
-            __('tilivier Proof-of-Work for Cap — Settings', 'tilivier-proof-of-work-for-cap'),
-            __('PoW for Cap', 'tilivier-proof-of-work-for-cap'),
+            __('OliWeb Proof-of-Work for Cap — Settings', 'oliweb-proof-of-work-for-cap'),
+            __('PoW for Cap', 'oliweb-proof-of-work-for-cap'),
             'manage_options',
             'tpow-settings',
             [$this, 'renderPage']
@@ -65,14 +65,14 @@ class Tpow_Settings
 
         add_settings_section(
             'tpow_main_section',
-            __('Cap Instance', 'tilivier-proof-of-work-for-cap'),
+            __('Cap Instance', 'oliweb-proof-of-work-for-cap'),
             null,
             'tpow-settings'
         );
 
         add_settings_field(
             'tpow_endpoint',
-            __('Endpoint URL', 'tilivier-proof-of-work-for-cap'),
+            __('Endpoint URL', 'oliweb-proof-of-work-for-cap'),
             [$this, 'renderEndpointField'],
             'tpow-settings',
             'tpow_main_section'
@@ -80,7 +80,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_secret',
-            __('Secret Key', 'tilivier-proof-of-work-for-cap'),
+            __('Secret Key', 'oliweb-proof-of-work-for-cap'),
             [$this, 'renderSecretField'],
             'tpow-settings',
             'tpow_main_section'
@@ -88,7 +88,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_token_field',
-            __('Token Field Name', 'tilivier-proof-of-work-for-cap'),
+            __('Token Field Name', 'oliweb-proof-of-work-for-cap'),
             [$this, 'renderTokenFieldField'],
             'tpow-settings',
             'tpow_main_section'
@@ -96,7 +96,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_timeout',
-            __('Timeout (seconds)', 'tilivier-proof-of-work-for-cap'),
+            __('Timeout (seconds)', 'oliweb-proof-of-work-for-cap'),
             [$this, 'renderTimeoutField'],
             'tpow-settings',
             'tpow_main_section'
@@ -104,7 +104,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_fail_open',
-            __('Fail Open', 'tilivier-proof-of-work-for-cap'),
+            __('Fail Open', 'oliweb-proof-of-work-for-cap'),
             [$this, 'renderFailOpenField'],
             'tpow-settings',
             'tpow_main_section'
@@ -112,7 +112,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_hide_attribution',
-            __('Hide Attribution Link', 'tilivier-proof-of-work-for-cap'),
+            __('Hide Attribution Link', 'oliweb-proof-of-work-for-cap'),
             [$this, 'renderHideAttributionField'],
             'tpow-settings',
             'tpow_main_section'
@@ -131,7 +131,7 @@ class Tpow_Settings
                 <?php
                 settings_fields('tpow_settings_group');
                 do_settings_sections('tpow-settings');
-                submit_button(__('Save Settings', 'tilivier-proof-of-work-for-cap'));
+                submit_button(__('Save Settings', 'oliweb-proof-of-work-for-cap'));
                 ?>
             </form>
         </div>
@@ -142,41 +142,41 @@ class Tpow_Settings
     {
         $value = get_option('tpow_endpoint', '');
         echo '<input type="url" name="tpow_endpoint" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com/your-site-key/" />';
-        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'tilivier-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'oliweb-proof-of-work-for-cap') . '</p>';
     }
 
     public function renderSecretField(): void
     {
         $value = get_option('tpow_secret', '');
         echo '<input type="password" name="tpow_secret" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'tilivier-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'oliweb-proof-of-work-for-cap') . '</p>';
     }
 
     public function renderTokenFieldField(): void
     {
         $value = get_option('tpow_token_field', 'cap-token');
         echo '<input type="text" name="tpow_token_field" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'tilivier-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'oliweb-proof-of-work-for-cap') . '</p>';
     }
 
     public function renderTimeoutField(): void
     {
         $value = (int) get_option('tpow_timeout', 5);
         echo '<input type="number" name="tpow_timeout" value="' . esc_attr((string) $value) . '" min="1" max="30" class="small-text" />';
-        echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'tilivier-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'oliweb-proof-of-work-for-cap') . '</p>';
     }
 
     public function renderFailOpenField(): void
     {
         $value = (bool) get_option('tpow_fail_open', false);
         echo '<label><input type="checkbox" name="tpow_fail_open" value="1"' . checked($value, true, false) . ' /> ';
-        echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'tilivier-proof-of-work-for-cap') . '</label>';
+        echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'oliweb-proof-of-work-for-cap') . '</label>';
     }
 
     public function renderHideAttributionField(): void
     {
         $value = (bool) get_option('tpow_hide_attribution', false);
         echo '<label><input type="checkbox" name="tpow_hide_attribution" value="1"' . checked($value, true, false) . ' /> ';
-        echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'tilivier-proof-of-work-for-cap') . '</label>';
+        echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'oliweb-proof-of-work-for-cap') . '</label>';
     }
 }
