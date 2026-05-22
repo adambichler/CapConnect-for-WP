@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -80,6 +80,10 @@ Yes. If Gravity Forms is active, the Cap widget is automatically prepended to th
 Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 
 == Changelog ==
+
+= 1.3.0 =
+* Nouveau : mode de vérification programmatique (invisible) — résolution PoW silencieuse en arrière-plan, aucun widget affiché à l'utilisateur
+* Option admin "Verification Mode" : bascule entre widget visible et mode programmatique
 
 = 1.2.2 =
 * Renommage : plugin publié sous l'identité OliWeb (slug oliweb-proof-of-work-for-cap)
