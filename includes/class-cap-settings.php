@@ -12,6 +12,7 @@ class Tpow_Settings
     {
         add_action('admin_menu', [$this, 'addMenuPage']);
         add_action('admin_init', [$this, 'registerSettings']);
+        add_action('wp_ajax_tpow_test_connection', [$this, 'handleTestConnection']);
     }
 
     public function addMenuPage(): void
@@ -148,6 +149,44 @@ class Tpow_Settings
                 submit_button(__('Save Settings', 'oliweb-proof-of-work-for-cap'));
                 ?>
             </form>
+
+            <hr>
+            <h2><?php esc_html_e('Test Connection', 'oliweb-proof-of-work-for-cap'); ?></h2>
+            <p><?php esc_html_e('Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first.', 'oliweb-proof-of-work-for-cap'); ?></p>
+            <button id="tpow-test-btn" class="button button-secondary">
+                <?php esc_html_e('Test connection', 'oliweb-proof-of-work-for-cap'); ?>
+            </button>
+            <span id="tpow-test-result" style="margin-left:10px;line-height:30px;vertical-align:middle;"></span>
+
+            <script>
+            (function () {
+                var nonce = <?php echo wp_json_encode(wp_create_nonce('tpow_test_connection')); ?>;
+                var btn    = document.getElementById('tpow-test-btn');
+                var result = document.getElementById('tpow-test-result');
+
+                btn.addEventListener('click', function () {
+                    btn.disabled   = true;
+                    result.style.color = '#666';
+                    result.textContent = '<?php esc_html_e('Testing…', 'oliweb-proof-of-work-for-cap'); ?>';
+
+                    fetch(ajaxurl, {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body:    'action=tpow_test_connection&nonce=' + encodeURIComponent(nonce),
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        result.style.color = data.success ? 'green' : '#cc0000';
+                        result.textContent = data.data.message;
+                    })
+                    .catch(function () {
+                        result.style.color = '#cc0000';
+                        result.textContent = '<?php esc_html_e('Request failed.', 'oliweb-proof-of-work-for-cap'); ?>';
+                    })
+                    .finally(function () { btn.disabled = false; });
+                });
+            })();
+            </script>
         </div>
         <?php
     }
@@ -202,5 +241,50 @@ class Tpow_Settings
         $value = (bool) get_option('tpow_hide_attribution', false);
         echo '<label><input type="checkbox" name="tpow_hide_attribution" value="1"' . checked($value, true, false) . ' /> ';
         echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'oliweb-proof-of-work-for-cap') . '</label>';
+    }
+
+    public function handleTestConnection(): void
+    {
+        check_ajax_referer('tpow_test_connection', 'nonce');
+
+        if (! current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized.', 'oliweb-proof-of-work-for-cap')], 403);
+        }
+
+        $endpoint = (string) get_option('tpow_endpoint', '');
+
+        if (empty($endpoint)) {
+            wp_send_json_error(['message' => __('No endpoint URL configured.', 'oliweb-proof-of-work-for-cap')]);
+        }
+
+        $url = rtrim($endpoint, '/') . '/challenge';
+
+        $response = wp_remote_post($url, [
+            'timeout'     => 10,
+            'headers'     => ['Content-Type' => 'application/json'],
+            'body'        => '{}',
+            'data_format' => 'body',
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()]);
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+
+        if ($code !== 200 || empty($data['token'])) {
+            wp_send_json_error([
+                'message' => sprintf(
+                    /* translators: 1: HTTP status code */
+                    __('Server responded with HTTP %d — check your endpoint URL.', 'oliweb-proof-of-work-for-cap'),
+                    $code
+                ),
+            ]);
+        }
+
+        wp_send_json_success([
+            'message' => __('✓ Connection successful — Cap server is reachable and responding correctly.', 'oliweb-proof-of-work-for-cap'),
+        ]);
     }
 }
