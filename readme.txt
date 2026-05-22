@@ -1,10 +1,10 @@
-=== tilivier Proof-of-Work for Cap ===
-Contributors: tilivier
+=== OliWeb Proof-of-Work for Cap ===
+Contributors: oliweb
 Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.2.0
+Stable tag: 1.2.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -12,7 +12,7 @@ Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, logi
 
 == Description ==
 
-tilivier Proof-of-Work for Cap integrates [Cap](https://github.com/tiagozip/cap) — a self-hosted, privacy-friendly proof-of-work CAPTCHA — into your WordPress site.
+OliWeb Proof-of-Work for Cap integrates [Cap](https://github.com/tiagozip/cap) — a self-hosted, privacy-friendly proof-of-work CAPTCHA — into your WordPress site.
 
 Unlike traditional CAPTCHAs, Cap does not rely on third-party services or user interaction: it runs a small computation in the visitor's browser to prove they are human, without tracking or collecting personal data.
 
@@ -80,6 +80,10 @@ Yes. If Gravity Forms is active, the Cap widget is automatically prepended to th
 Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 
 == Changelog ==
+
+= 1.2.2 =
+* Renommage : plugin publié sous l'identité OliWeb (slug oliweb-proof-of-work-for-cap)
+* Mises à jour automatiques via GitHub Releases (Plugin Update Checker v5.6)
 
 = 1.2.0 =
 * Mode programmatic : injection de `window.TPOW_CONFIG` (apiEndpoint, tokenField) via `enqueueAssets()`
