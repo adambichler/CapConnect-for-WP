@@ -1,0 +1,35 @@
+name: Build & attach release zip
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build zip
+        run: |
+          SLUG="oliweb-proof-of-work-for-cap"
+          mkdir -p "/tmp/${SLUG}"
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='.distignore' \
+            --exclude='.gitignore' \
+            --exclude='README.md' \
+            . "/tmp/${SLUG}/"
+          cd /tmp
+          zip -r "${SLUG}.zip" "${SLUG}/"
+
+      - name: Upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/oliweb-proof-of-work-for-cap.zip

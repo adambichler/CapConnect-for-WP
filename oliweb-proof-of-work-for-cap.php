@@ -24,6 +24,16 @@ define('TPOW_VERSION', '1.2.0');
 define('TPOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('TPOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+require_once TPOW_PLUGIN_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$pucChecker = PucFactory::buildUpdateChecker(
+    'https://github.com/oli217/oliweb-proof-of-work-for-cap/',
+    __FILE__,
+    'oliweb-proof-of-work-for-cap'
+);
+$pucChecker->getVcsApi()->enableReleaseAssets();
+
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-verifier.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-settings.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-widget.php';
