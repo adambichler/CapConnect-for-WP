@@ -10,7 +10,7 @@
  * Author URI:        https://github.com/oli217
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
- * Text Domain:       tilivier-pow-for-cap
+ * Text Domain:       tilivier-proof-of-work-for-cap
  * Domain Path:       /languages
  */
 

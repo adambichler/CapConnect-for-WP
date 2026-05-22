@@ -12,7 +12,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Domain: tilivier-pow-for-cap\n"
+"X-Domain: tilivier-proof-of-work-for-cap\n"
 
 #: includes/class-cap-widget.php:54
 msgid "Verify you're human"

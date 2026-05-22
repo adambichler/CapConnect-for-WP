@@ -56,17 +56,17 @@ class Tpow_Widget
         }
 
         $i18n = [
-            'initial-state'        => __("Verify you're human", 'tilivier-pow-for-cap'),
-            'required-label'       => __("Please verify you're human", 'tilivier-pow-for-cap'),
-            'verifying-label'      => __('Verifying...', 'tilivier-pow-for-cap'),
-            'verifying-aria-label' => __("Verifying you're a human, please wait", 'tilivier-pow-for-cap'),
-            'verified-aria-label'  => __("We have verified you're a human, you may now continue", 'tilivier-pow-for-cap'),
-            'error-label'          => __('Error', 'tilivier-pow-for-cap'),
-            'error-aria-label'     => __('An error occurred, please try again', 'tilivier-pow-for-cap'),
-            'wasm-disabled'        => __('Enable WASM for significantly faster solving', 'tilivier-pow-for-cap'),
-            'verify-aria-label'    => __("Click to verify you're a human", 'tilivier-pow-for-cap'),
-            'troubleshooting-label' => __('Troubleshoot', 'tilivier-pow-for-cap'),
-            'solved-label'         => __("You're a human", 'tilivier-pow-for-cap'),
+            'initial-state'        => __("Verify you're human", 'tilivier-proof-of-work-for-cap'),
+            'required-label'       => __("Please verify you're human", 'tilivier-proof-of-work-for-cap'),
+            'verifying-label'      => __('Verifying...', 'tilivier-proof-of-work-for-cap'),
+            'verifying-aria-label' => __("Verifying you're a human, please wait", 'tilivier-proof-of-work-for-cap'),
+            'verified-aria-label'  => __("We have verified you're a human, you may now continue", 'tilivier-proof-of-work-for-cap'),
+            'error-label'          => __('Error', 'tilivier-proof-of-work-for-cap'),
+            'error-aria-label'     => __('An error occurred, please try again', 'tilivier-proof-of-work-for-cap'),
+            'wasm-disabled'        => __('Enable WASM for significantly faster solving', 'tilivier-proof-of-work-for-cap'),
+            'verify-aria-label'    => __("Click to verify you're a human", 'tilivier-proof-of-work-for-cap'),
+            'troubleshooting-label' => __('Troubleshoot', 'tilivier-proof-of-work-for-cap'),
+            'solved-label'         => __("You're a human", 'tilivier-proof-of-work-for-cap'),
         ];
 
         foreach ($i18n as $key => $text) {

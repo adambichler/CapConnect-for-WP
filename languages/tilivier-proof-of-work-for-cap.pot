@@ -12,7 +12,7 @@ msgstr ""
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "X-Generator: manual\n"
-"X-Domain: tilivier-pow-for-cap\n"
+"X-Domain: tilivier-proof-of-work-for-cap\n"
 
 #: includes/class-cap-widget.php:54
 msgid "Verify you're human"
