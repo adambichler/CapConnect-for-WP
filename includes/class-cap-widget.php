@@ -34,16 +34,49 @@ class Tpow_Widget
             'before'
         );
 
-        wp_enqueue_style(
-            'tpow-widget',
-            TPOW_PLUGIN_URL . 'assets/css/tpow-widget.css',
-            [],
-            TPOW_VERSION
-        );
+        if (get_option('tpow_mode', 'widget') === 'programmatic') {
+            wp_add_inline_script('tpow-widget', $this->getProgrammaticScript(), 'after');
+        } else {
+            wp_enqueue_style(
+                'tpow-widget',
+                TPOW_PLUGIN_URL . 'assets/css/tpow-widget.css',
+                [],
+                TPOW_VERSION
+            );
 
-        if (get_option('tpow_hide_attribution', false)) {
-            wp_add_inline_style('tpow-widget', 'cap-widget::part(attribution){display:none}');
+            if (get_option('tpow_hide_attribution', false)) {
+                wp_add_inline_style('tpow-widget', 'cap-widget::part(attribution){display:none}');
+            }
         }
+    }
+
+    private function getProgrammaticScript(): string
+    {
+        return <<<'JS'
+(function () {
+    var cfg = window.TPOW_CONFIG;
+    if (!cfg || !cfg.apiEndpoint || typeof window.Cap === 'undefined') return;
+    var cap = new window.Cap({ apiEndpoint: cfg.apiEndpoint });
+    var tokenPromise = cap.solve();
+    tokenPromise.then(function (r) {
+        document.querySelectorAll('input[name="' + cfg.tokenField + '"]').forEach(function (f) {
+            f.value = r.token;
+        });
+    }).catch(function () {});
+    document.addEventListener('submit', function (e) {
+        var field = e.target.querySelector('input[name="' + cfg.tokenField + '"]');
+        if (!field || field.value) return;
+        e.preventDefault();
+        var form = e.target;
+        tokenPromise.then(function (r) {
+            field.value = r.token;
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        }).catch(function () {
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        });
+    }, true);
+})();
+JS;
     }
 
     public function renderWidget(?string $nonce = null): string
@@ -74,6 +107,20 @@ class Tpow_Widget
         }
 
         return '<cap-widget ' . $attrs . '></cap-widget>';
+    }
+
+    public function renderForMode(): string
+    {
+        if (get_option('tpow_mode', 'widget') === 'programmatic') {
+            return $this->renderProgrammaticWidget();
+        }
+        return $this->renderWidget();
+    }
+
+    public function renderProgrammaticWidget(): string
+    {
+        $field = (string) get_option('tpow_token_field', 'cap-token');
+        return '<input type="hidden" name="' . esc_attr($field) . '">';
     }
 
     public function renderShortcode(array $atts): string

@@ -67,25 +67,25 @@ class Tpow_Integrations
     public function renderWidgetComment(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderWidget(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetLogin(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderWidget(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetRegister(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderWidget(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetCheckout(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderWidget(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function validateCommentToken(array $commentData): array
@@ -151,7 +151,7 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
 
-        return $this->widget->renderWidget() . $button;
+        return $this->widget->renderForMode() . $button;
     }
 
     public function validateGravityFormsToken(array $validationResult): array

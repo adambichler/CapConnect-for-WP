@@ -63,11 +63,25 @@ class Tpow_Settings
             'default'           => false,
         ]);
 
+        register_setting('tpow_settings_group', 'tpow_mode', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_key',
+            'default'           => 'widget',
+        ]);
+
         add_settings_section(
             'tpow_main_section',
             __('Cap Instance', 'oliweb-proof-of-work-for-cap'),
             null,
             'tpow-settings'
+        );
+
+        add_settings_field(
+            'tpow_mode',
+            __('Verification Mode', 'oliweb-proof-of-work-for-cap'),
+            [$this, 'renderModeField'],
+            'tpow-settings',
+            'tpow_main_section'
         );
 
         add_settings_field(
@@ -136,6 +150,16 @@ class Tpow_Settings
             </form>
         </div>
         <?php
+    }
+
+    public function renderModeField(): void
+    {
+        $value = (string) get_option('tpow_mode', 'widget');
+        echo '<select name="tpow_mode">';
+        echo '<option value="widget"' . selected($value, 'widget', false) . '>' . esc_html__('Widget (visible)', 'oliweb-proof-of-work-for-cap') . '</option>';
+        echo '<option value="programmatic"' . selected($value, 'programmatic', false) . '>' . esc_html__('Programmatic (invisible)', 'oliweb-proof-of-work-for-cap') . '</option>';
+        echo '</select>';
+        echo '<p class="description">' . esc_html__('Programmatic mode solves the challenge silently in the background — no widget is shown to the user.', 'oliweb-proof-of-work-for-cap') . '</p>';
     }
 
     public function renderEndpointField(): void
