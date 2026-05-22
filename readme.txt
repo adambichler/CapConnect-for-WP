@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -80,6 +80,9 @@ Yes. If Gravity Forms is active, the Cap widget is automatically prepended to th
 Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 
 == Changelog ==
+
+= 1.3.1 =
+* Ajout d'un bouton de test de connexion dans l'admin — vérifie que l'endpoint Cap est joignable et répond correctement
 
 = 1.3.0 =
 * Nouveau : mode de vérification programmatique (invisible) — résolution PoW silencieuse en arrière-plan, aucun widget affiché à l'utilisateur
