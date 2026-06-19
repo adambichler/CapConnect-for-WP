@@ -59,11 +59,11 @@ msgid "You're a human"
 msgstr ""
 
 #: includes/class-cap-settings.php:20
-msgid "OliWeb Proof-of-Work for Cap — Settings"
+msgid "CapConnect for WP — Settings"
 msgstr ""
 
 #: includes/class-cap-settings.php:21
-msgid "PoW for Cap"
+msgid "CapConnect"
 msgstr ""
 
 #: includes/class-cap-settings.php:68
