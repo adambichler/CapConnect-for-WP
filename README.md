@@ -1,6 +1,6 @@
-# wordpress-cap
+# CapConnect for WP
 
-Plugin WordPress pour intégrer [Cap](https://github.com/tiagozip/cap) — un CAPTCHA proof-of-work auto-hébergé — dans les formulaires WordPress.
+Plugin WordPress pour intégrer [TryCap](https://trycap.dev/) — la version open source de Cap — dans les formulaires WordPress.
 
 Aucune dépendance externe : tout repose sur les API natives WordPress. Le module WebAssembly est bundlé localement dans le plugin.
 
@@ -16,9 +16,9 @@ Aucune dépendance externe : tout repose sur les API natives WordPress. Le modul
 
 ## Installation
 
-1. Copier le dossier `tilivier-pow-for-cap/` dans `wp-content/plugins/`
+1. Copier le dossier `capconnect-for-wp/` dans `wp-content/plugins/`
 2. Activer le plugin depuis **Extensions** dans l'administration WordPress
-3. Aller dans **Réglages > PoW for Cap** et renseigner l'endpoint et la clé secrète
+3. Aller dans **Réglages > CapConnect** et renseigner l'endpoint et la clé secrète
 
 Le plugin embarque tous les assets nécessaires (JS, CSS, WASM). Aucune étape de build ni de téléchargement supplémentaire n'est requise.
 
@@ -26,7 +26,7 @@ Le plugin embarque tous les assets nécessaires (JS, CSS, WASM). Aucune étape d
 
 ## Configuration
 
-Accéder à **Réglages > PoW for Cap** dans l'administration WordPress.
+Accéder à **Réglages > CapConnect** dans l'administration WordPress.
 
 | Champ | Description | Défaut |
 |-------|-------------|--------|

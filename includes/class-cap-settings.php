@@ -15,11 +15,14 @@ class Tpow_Settings
         add_action('wp_ajax_tpow_test_connection', [$this, 'handleTestConnection']);
     }
 
+    /**
+     * Fügt die Einstellungsseite im WordPress-Backend hinzu.
+     */
     public function addMenuPage(): void
     {
         add_options_page(
-            __('OliWeb Proof-of-Work for Cap — Settings', 'oliweb-proof-of-work-for-cap'),
-            __('PoW for Cap', 'oliweb-proof-of-work-for-cap'),
+            __('CapConnect for WP — Settings', 'capconnect-for-wp'),
+            __('CapConnect', 'capconnect-for-wp'),
             'manage_options',
             'tpow-settings',
             [$this, 'renderPage']
@@ -72,14 +75,14 @@ class Tpow_Settings
 
         add_settings_section(
             'tpow_main_section',
-            __('Cap Instance', 'oliweb-proof-of-work-for-cap'),
+            __('Cap Instance', 'capconnect-for-wp'),
             null,
             'tpow-settings'
         );
 
         add_settings_field(
             'tpow_mode',
-            __('Verification Mode', 'oliweb-proof-of-work-for-cap'),
+            __('Verification Mode', 'capconnect-for-wp'),
             [$this, 'renderModeField'],
             'tpow-settings',
             'tpow_main_section'
@@ -87,7 +90,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_endpoint',
-            __('Endpoint URL', 'oliweb-proof-of-work-for-cap'),
+            __('Endpoint URL', 'capconnect-for-wp'),
             [$this, 'renderEndpointField'],
             'tpow-settings',
             'tpow_main_section'
@@ -95,7 +98,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_secret',
-            __('Secret Key', 'oliweb-proof-of-work-for-cap'),
+            __('Secret Key', 'capconnect-for-wp'),
             [$this, 'renderSecretField'],
             'tpow-settings',
             'tpow_main_section'
@@ -103,7 +106,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_token_field',
-            __('Token Field Name', 'oliweb-proof-of-work-for-cap'),
+            __('Token Field Name', 'capconnect-for-wp'),
             [$this, 'renderTokenFieldField'],
             'tpow-settings',
             'tpow_main_section'
@@ -111,7 +114,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_timeout',
-            __('Timeout (seconds)', 'oliweb-proof-of-work-for-cap'),
+            __('Timeout (seconds)', 'capconnect-for-wp'),
             [$this, 'renderTimeoutField'],
             'tpow-settings',
             'tpow_main_section'
@@ -119,7 +122,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_fail_open',
-            __('Fail Open', 'oliweb-proof-of-work-for-cap'),
+            __('Fail Open', 'capconnect-for-wp'),
             [$this, 'renderFailOpenField'],
             'tpow-settings',
             'tpow_main_section'
@@ -127,7 +130,7 @@ class Tpow_Settings
 
         add_settings_field(
             'tpow_hide_attribution',
-            __('Hide Attribution Link', 'oliweb-proof-of-work-for-cap'),
+            __('Hide Attribution Link', 'capconnect-for-wp'),
             [$this, 'renderHideAttributionField'],
             'tpow-settings',
             'tpow_main_section'
@@ -146,15 +149,15 @@ class Tpow_Settings
                 <?php
                 settings_fields('tpow_settings_group');
                 do_settings_sections('tpow-settings');
-                submit_button(__('Save Settings', 'oliweb-proof-of-work-for-cap'));
+                submit_button(__('Save Settings', 'capconnect-for-wp'));
                 ?>
             </form>
 
             <hr>
-            <h2><?php esc_html_e('Test Connection', 'oliweb-proof-of-work-for-cap'); ?></h2>
-            <p><?php esc_html_e('Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first.', 'oliweb-proof-of-work-for-cap'); ?></p>
+            <h2><?php esc_html_e('Test Connection', 'capconnect-for-wp'); ?></h2>
+            <p><?php esc_html_e('Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first.', 'capconnect-for-wp'); ?></p>
             <button id="tpow-test-btn" class="button button-secondary">
-                <?php esc_html_e('Test connection', 'oliweb-proof-of-work-for-cap'); ?>
+                <?php esc_html_e('Test connection', 'capconnect-for-wp'); ?>
             </button>
             <span id="tpow-test-result" style="margin-left:10px;line-height:30px;vertical-align:middle;"></span>
 
@@ -167,7 +170,7 @@ class Tpow_Settings
                 btn.addEventListener('click', function () {
                     btn.disabled   = true;
                     result.style.color = '#666';
-                    result.textContent = '<?php esc_html_e('Testing…', 'oliweb-proof-of-work-for-cap'); ?>';
+                    result.textContent = '<?php esc_html_e('Testing…', 'capconnect-for-wp'); ?>';
 
                     fetch(ajaxurl, {
                         method:  'POST',
@@ -181,7 +184,7 @@ class Tpow_Settings
                     })
                     .catch(function () {
                         result.style.color = '#cc0000';
-                        result.textContent = '<?php esc_html_e('Request failed.', 'oliweb-proof-of-work-for-cap'); ?>';
+                        result.textContent = '<?php esc_html_e('Request failed.', 'capconnect-for-wp'); ?>';
                     })
                     .finally(function () { btn.disabled = false; });
                 });
@@ -195,52 +198,52 @@ class Tpow_Settings
     {
         $value = (string) get_option('tpow_mode', 'widget');
         echo '<select name="tpow_mode">';
-        echo '<option value="widget"' . selected($value, 'widget', false) . '>' . esc_html__('Widget (visible)', 'oliweb-proof-of-work-for-cap') . '</option>';
-        echo '<option value="programmatic"' . selected($value, 'programmatic', false) . '>' . esc_html__('Programmatic (invisible)', 'oliweb-proof-of-work-for-cap') . '</option>';
+        echo '<option value="widget"' . selected($value, 'widget', false) . '>' . esc_html__('Widget (visible)', 'capconnect-for-wp') . '</option>';
+        echo '<option value="programmatic"' . selected($value, 'programmatic', false) . '>' . esc_html__('Programmatic (invisible)', 'capconnect-for-wp') . '</option>';
         echo '</select>';
-        echo '<p class="description">' . esc_html__('Programmatic mode solves the challenge silently in the background — no widget is shown to the user.', 'oliweb-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('Programmatic mode solves the challenge silently in the background — no widget is shown to the user.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderEndpointField(): void
     {
         $value = get_option('tpow_endpoint', '');
         echo '<input type="url" name="tpow_endpoint" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com/your-site-key/" />';
-        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'oliweb-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderSecretField(): void
     {
         $value = get_option('tpow_secret', '');
         echo '<input type="password" name="tpow_secret" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'oliweb-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderTokenFieldField(): void
     {
         $value = get_option('tpow_token_field', 'cap-token');
         echo '<input type="text" name="tpow_token_field" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'oliweb-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderTimeoutField(): void
     {
         $value = (int) get_option('tpow_timeout', 5);
         echo '<input type="number" name="tpow_timeout" value="' . esc_attr((string) $value) . '" min="1" max="30" class="small-text" />';
-        echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'oliweb-proof-of-work-for-cap') . '</p>';
+        echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderFailOpenField(): void
     {
         $value = (bool) get_option('tpow_fail_open', false);
         echo '<label><input type="checkbox" name="tpow_fail_open" value="1"' . checked($value, true, false) . ' /> ';
-        echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'oliweb-proof-of-work-for-cap') . '</label>';
+        echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'capconnect-for-wp') . '</label>';
     }
 
     public function renderHideAttributionField(): void
     {
         $value = (bool) get_option('tpow_hide_attribution', false);
         echo '<label><input type="checkbox" name="tpow_hide_attribution" value="1"' . checked($value, true, false) . ' /> ';
-        echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'oliweb-proof-of-work-for-cap') . '</label>';
+        echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'capconnect-for-wp') . '</label>';
     }
 
     public function handleTestConnection(): void
@@ -248,13 +251,13 @@ class Tpow_Settings
         check_ajax_referer('tpow_test_connection', 'nonce');
 
         if (! current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized.', 'oliweb-proof-of-work-for-cap')], 403);
+            wp_send_json_error(['message' => __('Unauthorized.', 'capconnect-for-wp')], 403);
         }
 
         $endpoint = (string) get_option('tpow_endpoint', '');
 
         if (empty($endpoint)) {
-            wp_send_json_error(['message' => __('No endpoint URL configured.', 'oliweb-proof-of-work-for-cap')]);
+            wp_send_json_error(['message' => __('No endpoint URL configured.', 'capconnect-for-wp')]);
         }
 
         $url = rtrim($endpoint, '/') . '/challenge';
@@ -277,14 +280,14 @@ class Tpow_Settings
             wp_send_json_error([
                 'message' => sprintf(
                     /* translators: 1: HTTP status code */
-                    __('Server responded with HTTP %d — check your endpoint URL.', 'oliweb-proof-of-work-for-cap'),
+                    __('Server responded with HTTP %d — check your endpoint URL.', 'capconnect-for-wp'),
                     $code
                 ),
             ]);
         }
 
         wp_send_json_success([
-            'message' => __('✓ Connection successful — Cap server is reachable and responding correctly.', 'oliweb-proof-of-work-for-cap'),
+            'message' => __('✓ Connection successful — Cap server is reachable and responding correctly.', 'capconnect-for-wp'),
         ]);
     }
 }

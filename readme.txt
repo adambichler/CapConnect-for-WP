@@ -1,5 +1,5 @@
-=== OliWeb Proof-of-Work for Cap ===
-Contributors: oliweb
+=== CapConnect for WP ===
+Contributors: adambichler
 Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
@@ -12,7 +12,7 @@ Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, logi
 
 == Description ==
 
-OliWeb Proof-of-Work for Cap integrates [Cap](https://github.com/tiagozip/cap) — a self-hosted, privacy-friendly proof-of-work CAPTCHA — into your WordPress site.
+CapConnect for WP integrates [TryCap](https://trycap.dev/) — the open-source version of Cap — into your WordPress site.
 
 Unlike traditional CAPTCHAs, Cap does not rely on third-party services or user interaction: it runs a small computation in the visitor's browser to prove they are human, without tracking or collecting personal data.
 
@@ -33,7 +33,7 @@ The Cap widget uses a WebAssembly (WASM) module to perform the proof-of-work com
 * Protects Gravity Forms (if Gravity Forms is active)
 * Shortcode `[tpow_widget]` for use in any page or form builder
 * Shortcode `[tpow_programmatic]` for programmatic Cap usage (headless mode)
-* Settings page under **Settings > PoW for Cap**
+* Settings page under **Settings > CapConnect**
 * Fail-open mode: lets requests through if the Cap server is unreachable
 * No external dependencies — uses native WordPress HTTP API and bundled WASM
 
@@ -43,13 +43,13 @@ A self-hosted Cap instance is required. See the [Cap documentation](https://gith
 
 == Installation ==
 
-1. Upload the `tilivier-pow-for-cap` folder to the `/wp-content/plugins/` directory.
+1. Upload the `capconnect-for-wp` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the **Plugins** screen in WordPress.
-3. Go to **Settings > PoW for Cap** and enter your Cap endpoint URL and secret key.
+3. Go to **Settings > CapConnect** and enter your Cap endpoint URL and secret key.
 
 == Configuration ==
 
-After activation, navigate to **Settings > PoW for Cap**:
+After activation, navigate to **Settings > CapConnect**:
 
 * **Endpoint URL** — Full URL of your Cap instance, including the site key (e.g. `https://cap.example.com/your-site-key/`)
 * **Secret Key** — The secret key from your Cap dashboard
@@ -88,9 +88,8 @@ Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 * Nouveau : mode de vérification programmatique (invisible) — résolution PoW silencieuse en arrière-plan, aucun widget affiché à l'utilisateur
 * Option admin "Verification Mode" : bascule entre widget visible et mode programmatique
 
-= 1.2.2 =
-* Renommage : plugin publié sous l'identité OliWeb (slug oliweb-proof-of-work-for-cap)
-* Mises à jour automatiques via GitHub Releases (Plugin Update Checker v5.6)
+* Renommage : plugin publié sous le nom CapConnect for WP (slug capconnect-for-wp)
+* Mises à jour automatiques via GitHub Releases du fork CapConnect for WP (Plugin Update Checker v5.6)
 
 = 1.2.0 =
 * Mode programmatic : injection de `window.TPOW_CONFIG` (apiEndpoint, tokenField) via `enqueueAssets()`
@@ -104,4 +103,4 @@ Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 * Initial release
 * Comment, login, registration, and WooCommerce checkout protection
 * Shortcode `[tpow_widget]`
-* Settings page under Settings > PoW for Cap
+* Settings page under Settings > CapConnect
