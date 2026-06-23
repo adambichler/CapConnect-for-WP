@@ -18,7 +18,7 @@ No external dependencies: everything relies on native WordPress APIs. The WebAss
 
 1. Copy the `capconnect-for-wp/` folder to `wp-content/plugins/`
 2. Activate the plugin from **Plugins** in the WordPress administration panel
-3. Go to **Settings > CapConnect** and fill in the endpoint and secret key
+3. Go to **Settings > CapConnect** and fill in the Instance URL, Site Key, and Secret Key
 
 The plugin includes all necessary assets (JS, CSS, WASM). No extra build step or download is required.
 
@@ -26,16 +26,36 @@ The plugin includes all necessary assets (JS, CSS, WASM). No extra build step or
 
 ## Configuration
 
-Access **Settings > CapConnect** in the WordPress administration panel.
+Access **Settings > CapConnect** in the WordPress administration panel. The options are divided into three tabs:
+
+### Connection
 
 | Field | Description | Default |
 |-------|-------------|--------|
+| Verification Mode | Toggle between **Widget (visible)** (shows the Cap widget) and **Programmatic (invisible)** (silent background solving) | `Widget (visible)` |
 | Instance URL | URL of your self-hosted Cap instance (e.g., `https://cap.example.com`) | — |
 | Site Key | Site key configured on your Cap instance | — |
 | Secret Key | Secret key generated in the Cap dashboard (never expose on the client side) | — |
 | Timeout (seconds) | Delay before abandoning the request to `/siteverify` | `5` |
 | Fail Open | If checked, lets the request through in case of communication error with Cap | unchecked |
-| Hide Attribution Link | If checked, hides the "Cap" link in the bottom-right of the widget | unchecked |
+
+### Forms
+
+Toggle protection for individual native forms:
+- **Login Form** (default: checked)
+- **Registration Form** (default: checked)
+- **Lost Password Form** (default: checked) - protects both the lost password request and the reset password forms
+- **Comments Form** (default: checked)
+- **WooCommerce Checkout** (default: checked, only active if WooCommerce is enabled)
+- **Gravity Forms** (default: checked, only active if Gravity Forms is enabled)
+
+### Styling
+
+Customize the look and feel of the visible widget (only active when **Verification Mode** is set to **Widget (visible)**):
+- **Widget Container Styles**: Background Color, Text Color, Border Color, and Border Radius (px)
+- **Checkbox Styles**: Checkbox Background, Checkmark Color, Border Color, Border Style, Border Width (px), and Checkbox Border Radius (px)
+- **Spinner Styles**: Spinner Background Color and Spinner Color
+- **Hide Attribution Link**: Hides the "Cap" attribution link in the bottom-right of the widget
 
 ### Fail-open mode
 
@@ -56,6 +76,8 @@ The plugin automatically integrates with the following WordPress forms upon acti
 | Comments | `comment_form_after_fields` | `preprocess_comment` |
 | Login | `login_form` | `wp_authenticate_user` |
 | Registration | `register_form` | `registration_errors` |
+| Lost Password | `lostpassword_form` | `lostpassword_post` |
+| Password Reset | `resetpass_form` | `validate_password_reset` |
 | WooCommerce checkout | `woocommerce_after_checkout_billing_form` | `woocommerce_checkout_process` |
 | Gravity Forms | `gform_submit_button` | `gform_validation` |
 
@@ -150,9 +172,28 @@ Uninstalling via the WordPress interface automatically deletes all saved options
 - `tpow_instance_url`
 - `tpow_site_key`
 - `tpow_secret`
-- `tpow_token_field`
 - `tpow_timeout`
 - `tpow_fail_open`
+- `tpow_hide_attribution`
+- `tpow_mode`
+- `tpow_background`
+- `tpow_color`
+- `tpow_border_color`
+- `tpow_checkbox_background`
+- `tpow_spinner_color`
+- `tpow_spinner_background`
+- `tpow_checkbox_border_color`
+- `tpow_checkbox_border_style`
+- `tpow_checkbox_border_width`
+- `tpow_border_radius`
+- `tpow_checkbox_border_radius`
+- `tpow_checkbox_checkmark_color`
+- `tpow_protect_login`
+- `tpow_protect_register`
+- `tpow_protect_lostpassword`
+- `tpow_protect_comments`
+- `tpow_protect_woocommerce`
+- `tpow_protect_gravityforms`
 
 ---
 

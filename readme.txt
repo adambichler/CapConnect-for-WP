@@ -8,7 +8,7 @@ Stable tag: 1.3.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, login, registration, WooCommerce checkout, and Gravity Forms.
+Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, login, registration, lost password, WooCommerce checkout, and Gravity Forms.
 
 == Description ==
 
@@ -29,6 +29,7 @@ The Cap widget uses a WebAssembly (WASM) module to perform the proof-of-work com
 * Protects comment forms
 * Protects login form
 * Protects registration form
+* Protects lost password and password reset forms
 * Protects WooCommerce checkout (if WooCommerce is active)
 * Protects Gravity Forms (if Gravity Forms is active)
 * Shortcode `[tpow_widget]` for use in any page or form builder
@@ -45,17 +46,24 @@ A self-hosted Cap instance is required. See the [Cap documentation](https://gith
 
 1. Upload the `capconnect-for-wp` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the **Plugins** screen in WordPress.
-3. Go to **Settings > CapConnect** and enter your Cap endpoint URL and secret key.
+3. Go to **Settings > CapConnect** and enter your Instance URL, Site Key, and Secret Key.
 
 == Configuration ==
 
-After activation, navigate to **Settings > CapConnect**:
+After activation, navigate to **Settings > CapConnect**. The settings are divided into three tabs:
 
-* **Endpoint URL** — Full URL of your Cap instance, including the site key (e.g. `https://cap.example.com/your-site-key/`)
-* **Secret Key** — The secret key from your Cap dashboard
-* **Token Field Name** — Name of the hidden field injected by the widget (default: `cap-token`)
-* **Timeout** — Seconds before abandoning the request to `/siteverify` (default: `5`)
-* **Fail Open** — Allow requests through when the Cap server is unreachable
+* **Connection Tab:**
+    * **Verification Mode** — Toggle between visible widget and programmatic (invisible) mode.
+    * **Instance URL** — URL of your Cap instance (e.g. `https://cap.example.com`).
+    * **Site Key** — The site key from your Cap dashboard.
+    * **Secret Key** — The secret key from your Cap dashboard.
+    * **Timeout** — Seconds before abandoning the request to `/siteverify` (default: `5`).
+    * **Fail Open** — Allow requests through when the Cap server is unreachable.
+* **Forms Tab:**
+    * Enable or disable protection for: Login Form, Registration Form, Lost Password Form, Comments Form, WooCommerce Checkout, and Gravity Forms.
+* **Styling Tab:**
+    * Customize background colors, text colors, borders, checkmark, and spinner styles for the visible widget (only active in Widget mode).
+    * **Hide Attribution Link** — Toggle to hide the "Cap" link at the bottom-right of the widget.
 
 == Frequently Asked Questions ==
 
