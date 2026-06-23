@@ -17,7 +17,7 @@ class Tpow_Settings
         add_action('admin_init', [$this, 'handleResetStyleSettings']);
 
         // Settings link on the plugins list page
-        $plugin_file = TPOW_PLUGIN_DIR . 'oliweb-proof-of-work-for-cap.php';
+        $plugin_file = TPOW_PLUGIN_DIR . 'capconnect-for-wp.php';
         add_filter('plugin_action_links_' . plugin_basename($plugin_file), [$this, 'addSettingsLink']);
 
         // Migrate legacy combined endpoint URL to separate fields

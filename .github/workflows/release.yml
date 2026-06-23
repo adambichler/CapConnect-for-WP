@@ -16,7 +16,7 @@ jobs:
 
       - name: Build zip
         run: |
-          SLUG="oliweb-proof-of-work-for-cap"
+          SLUG="capconnect-for-wp"
           mkdir -p "/tmp/${SLUG}"
           rsync -a \
             --exclude='.git' \
@@ -32,4 +32,4 @@ jobs:
       - name: Upload asset
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/oliweb-proof-of-work-for-cap.zip
+          files: /tmp/capconnect-for-wp.zip
