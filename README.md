@@ -30,7 +30,8 @@ Accéder à **Réglages > CapConnect** dans l'administration WordPress.
 
 | Champ | Description | Défaut |
 |-------|-------------|--------|
-| Endpoint URL | URL complète de votre instance Cap, incluant le site-key (ex : `https://cap.example.com/votre-site-key/`) | — |
+| Instance URL | URL de votre instance Cap auto-hébergée (ex : `https://cap.example.com`) | — |
+| Site Key | Clé du site configurée sur votre instance Cap | — |
 | Secret Key | Clé secrète générée dans le tableau de bord Cap (ne jamais exposer côté client) | — |
 | Token Field Name | Nom du champ hidden injecté par le widget | `cap-token` |
 | Timeout (seconds) | Délai avant abandon de la requête vers `/siteverify` | `5` |
@@ -147,7 +148,8 @@ Content-Security-Policy:
 
 La désinstallation via l'interface WordPress supprime automatiquement toutes les options enregistrées en base de données :
 
-- `tpow_endpoint`
+- `tpow_instance_url`
+- `tpow_site_key`
 - `tpow_secret`
 - `tpow_token_field`
 - `tpow_timeout`

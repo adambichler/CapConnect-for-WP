@@ -13,6 +13,71 @@ class Tpow_Settings
         add_action('admin_menu', [$this, 'addMenuPage']);
         add_action('admin_init', [$this, 'registerSettings']);
         add_action('wp_ajax_tpow_test_connection', [$this, 'handleTestConnection']);
+
+        // Settings link on the plugins list page
+        $plugin_file = TPOW_PLUGIN_DIR . 'oliweb-proof-of-work-for-cap.php';
+        add_filter('plugin_action_links_' . plugin_basename($plugin_file), [$this, 'addSettingsLink']);
+
+        // Migrate legacy combined endpoint URL to separate fields
+        $this->migrateLegacyEndpoint();
+    }
+
+    /**
+     * Fügt einen Einstellungs-Link auf der WordPress-Plugin-Seite hinzu.
+     */
+    public function addSettingsLink(array $links): array
+    {
+        $settings_link = '<a href="' . esc_url(admin_url('options-general.php?page=tpow-settings')) . '">'
+            . esc_html__('Settings', 'capconnect-for-wp')
+            . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
+    }
+
+    /**
+     * Liefert den kombinierten Endpoint aus Instanz-URL und Site Key.
+     */
+    public static function getEndpoint(): string
+    {
+        $instance = (string) get_option('tpow_instance_url', '');
+        $site_key = (string) get_option('tpow_site_key', '');
+        if ($instance !== '' && $site_key !== '') {
+            return rtrim($instance, '/') . '/' . ltrim($site_key, '/');
+        }
+        return (string) get_option('tpow_endpoint', '');
+    }
+
+    /**
+     * Migriert das alte, kombinierte tpow_endpoint in separate Optionen.
+     */
+    private function migrateLegacyEndpoint(): void
+    {
+        $endpoint = trim((string) get_option('tpow_endpoint', ''));
+        if ($endpoint !== '') {
+            $parsed_url = wp_parse_url($endpoint);
+            if ($parsed_url && isset($parsed_url['path'])) {
+                $path = trim($parsed_url['path'], '/');
+                $parts = explode('/', $path);
+                if (! empty($parts)) {
+                    $site_key = array_pop($parts);
+                    
+                    // Rebuild the instance URL
+                    $scheme = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
+                    $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+                    $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
+                    $remaining_path = implode('/', $parts);
+                    
+                    $instance_url = $scheme . $host . $port;
+                    if ($remaining_path !== '') {
+                        $instance_url .= '/' . $remaining_path;
+                    }
+                    
+                    update_option('tpow_instance_url', $instance_url);
+                    update_option('tpow_site_key', $site_key);
+                    delete_option('tpow_endpoint');
+                }
+            }
+        }
     }
 
     /**
@@ -31,9 +96,15 @@ class Tpow_Settings
 
     public function registerSettings(): void
     {
-        register_setting('tpow_settings_group', 'tpow_endpoint', [
+        register_setting('tpow_settings_group', 'tpow_instance_url', [
             'type'              => 'string',
             'sanitize_callback' => 'esc_url_raw',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_site_key', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
@@ -89,9 +160,17 @@ class Tpow_Settings
         );
 
         add_settings_field(
-            'tpow_endpoint',
-            __('Endpoint URL', 'capconnect-for-wp'),
-            [$this, 'renderEndpointField'],
+            'tpow_instance_url',
+            __('Instance URL', 'capconnect-for-wp'),
+            [$this, 'renderInstanceUrlField'],
+            'tpow-settings',
+            'tpow_main_section'
+        );
+
+        add_settings_field(
+            'tpow_site_key',
+            __('Site Key', 'capconnect-for-wp'),
+            [$this, 'renderSiteKeyField'],
             'tpow-settings',
             'tpow_main_section'
         );
@@ -204,11 +283,18 @@ class Tpow_Settings
         echo '<p class="description">' . esc_html__('Programmatic mode solves the challenge silently in the background — no widget is shown to the user.', 'capconnect-for-wp') . '</p>';
     }
 
-    public function renderEndpointField(): void
+    public function renderInstanceUrlField(): void
     {
-        $value = get_option('tpow_endpoint', '');
-        echo '<input type="url" name="tpow_endpoint" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com/your-site-key/" />';
-        echo '<p class="description">' . esc_html__('Full URL of your self-hosted Cap instance, including the site key.', 'capconnect-for-wp') . '</p>';
+        $value = get_option('tpow_instance_url', '');
+        echo '<input type="url" name="tpow_instance_url" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com" />';
+        echo '<p class="description">' . esc_html__('Your Cap Standalone server URL, e.g. https://cap.example.com', 'capconnect-for-wp') . '</p>';
+    }
+
+    public function renderSiteKeyField(): void
+    {
+        $value = get_option('tpow_site_key', '');
+        echo '<input type="text" name="tpow_site_key" value="' . esc_attr($value) . '" class="regular-text" />';
+        echo '<p class="description">' . esc_html__('The site key from your Cap dashboard.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderSecretField(): void
@@ -254,7 +340,7 @@ class Tpow_Settings
             wp_send_json_error(['message' => __('Unauthorized.', 'capconnect-for-wp')], 403);
         }
 
-        $endpoint = (string) get_option('tpow_endpoint', '');
+        $endpoint = self::getEndpoint();
 
         if (empty($endpoint)) {
             wp_send_json_error(['message' => __('No endpoint URL configured.', 'capconnect-for-wp')]);

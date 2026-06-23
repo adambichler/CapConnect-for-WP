@@ -38,7 +38,7 @@ class Tpow_Verifier
 
     private function siteVerifyUrl(): string
     {
-        return rtrim((string) get_option('tpow_endpoint', ''), '/') . '/siteverify';
+        return rtrim(Tpow_Settings::getEndpoint(), '/') . '/siteverify';
     }
 
     private function secret(): string

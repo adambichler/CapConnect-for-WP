@@ -9,6 +9,8 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 delete_option('tpow_endpoint');
+delete_option('tpow_instance_url');
+delete_option('tpow_site_key');
 delete_option('tpow_secret');
 delete_option('tpow_token_field');
 delete_option('tpow_timeout');

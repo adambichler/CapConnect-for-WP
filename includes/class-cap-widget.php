@@ -28,7 +28,7 @@ class Tpow_Widget
             'tpow-widget',
             'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(TPOW_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';'
             . 'window.TPOW_CONFIG = ' . wp_json_encode([
-                'apiEndpoint' => (string) get_option('tpow_endpoint', ''),
+                'apiEndpoint' => Tpow_Settings::getEndpoint(),
                 'tokenField'  => (string) get_option('tpow_token_field', 'cap-token'),
             ]) . ';',
             'before'
@@ -81,7 +81,7 @@ JS;
 
     public function renderWidget(?string $nonce = null): string
     {
-        $endpoint = esc_attr((string) get_option('tpow_endpoint', ''));
+        $endpoint = esc_attr(Tpow_Settings::getEndpoint());
         $attrs = 'data-cap-api-endpoint="' . $endpoint . '"';
 
         if ($nonce !== null) {
