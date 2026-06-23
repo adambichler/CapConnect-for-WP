@@ -82,18 +82,18 @@ Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 == Changelog ==
 
 = 1.3.1 =
-* Ajout d'un bouton de test de connexion dans l'admin — vérifie que l'endpoint Cap est joignable et répond correctement
+* Added a connection test button in the admin – checks that the Cap endpoint is reachable and responds correctly
 
 = 1.3.0 =
-* Nouveau : mode de vérification programmatique (invisible) — résolution PoW silencieuse en arrière-plan, aucun widget affiché à l'utilisateur
-* Option admin "Verification Mode" : bascule entre widget visible et mode programmatique
+* New: programmatic verification mode (invisible) – silent PoW solving in the background, no widget shown to the user
+* Admin option "Verification Mode": toggle between visible widget and programmatic mode
 
-* Renommage : plugin publié sous le nom CapConnect for WP (slug capconnect-for-wp)
-* Mises à jour automatiques via GitHub Releases du fork CapConnect for WP (Plugin Update Checker v5.6)
+* Renaming: plugin published under the name CapConnect for WP (slug capconnect-for-wp)
+* Automatic updates via GitHub Releases of the CapConnect for WP fork (Plugin Update Checker v5.6)
 
 = 1.2.0 =
-* Mode programmatic : injection de `window.TPOW_CONFIG` (apiEndpoint, tokenField) via `enqueueAssets()`
-* Nouveau shortcode `[tpow_programmatic]` : charge les assets et insère un champ hidden prêt à recevoir le token résolu via `new Cap({...})`
+* Programmatic mode: injection of window.TPOW_CONFIG (apiEndpoint, tokenField) via enqueueAssets()
+* New shortcode [tpow_programmatic]: loads assets and inserts a hidden field ready to receive the solved token via new Cap({...})
 
 = 1.1.0 =
 * Widget i18n: all Cap widget labels are now translated via WordPress translation system (data-cap-i18n-* attributes)

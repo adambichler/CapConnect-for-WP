@@ -25,7 +25,7 @@ define('TPOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('TPOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 /**
- * Lädt die Übersetzungen für das Plugin.
+ * Loads the translations for the plugin.
  */
 function tpow_load_textdomain(): void
 {
@@ -37,7 +37,7 @@ add_action('plugins_loaded', 'tpow_load_textdomain');
 require_once TPOW_PLUGIN_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
-// Verweist auf das Fork-Repository für automatische GitHub-Releases.
+// References the fork repository for automatic GitHub releases.
 $tpowUpdateCheckerUrl = 'https://github.com/adambichler/CapConnect-for-WP/';
 $pucChecker = PucFactory::buildUpdateChecker(
     $tpowUpdateCheckerUrl,

@@ -176,16 +176,16 @@ JS;
     }
 
     /**
-     * Shortcode [tpow_programmatic] pour le mode programmatic Cap.
+     * Shortcode [tpow_programmatic] for the programmatic Cap mode.
      *
-     * Charge les assets (JS/CSS/WASM + window.TPOW_CONFIG) et insère
-     * un champ hidden prêt à recevoir le token résolu via new Cap({...}).
+     * Loads the assets (JS/CSS/WASM + window.TPOW_CONFIG) and inserts
+     * a hidden field ready to receive the solved token via new Cap({...}).
      *
-     * Attributs :
-     *   field : nom du champ hidden (défaut : cap-token)
-     *   id    : id HTML du champ   (défaut : tpow-token)
+     * Attributes:
+     *   field : name of the hidden field (default: cap-token)
+     *   id    : HTML id of the field     (default: tpow-token)
      *
-     * Exemple JS :
+     * JS Example:
      *   const cap = new Cap({ apiEndpoint: window.TPOW_CONFIG.apiEndpoint });
      *   const { token } = await cap.solve();
      *   document.getElementById('tpow-token').value = token;

@@ -25,7 +25,7 @@ class Tpow_Settings
     }
 
     /**
-     * Fügt einen Einstellungs-Link auf der WordPress-Plugin-Seite hinzu.
+     * Adds a settings link on the WordPress plugins page.
      */
     public function addSettingsLink(array $links): array
     {
@@ -37,7 +37,7 @@ class Tpow_Settings
     }
 
     /**
-     * Liefert den kombinierten Endpoint aus Instanz-URL und Site Key.
+     * Returns the combined endpoint from the instance URL and site key.
      */
     public static function getEndpoint(): string
     {
@@ -50,7 +50,7 @@ class Tpow_Settings
     }
 
     /**
-     * Migriert das alte, kombinierte tpow_endpoint in separate Optionen.
+     * Migrates the legacy combined tpow_endpoint to separate options.
      */
     private function migrateLegacyEndpoint(): void
     {
@@ -83,7 +83,7 @@ class Tpow_Settings
     }
 
     /**
-     * Fügt die Einstellungsseite im WordPress-Backend hinzu.
+     * Adds the settings page in the WordPress backend.
      */
     public function addMenuPage(): void
     {
