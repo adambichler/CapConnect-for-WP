@@ -14,6 +14,7 @@ class Tpow_Settings
         add_action('admin_init', [$this, 'registerSettings']);
         add_action('wp_ajax_tpow_test_connection', [$this, 'handleTestConnection']);
         add_action('admin_init', [$this, 'handleResetSettings']);
+        add_action('admin_init', [$this, 'handleResetStyleSettings']);
 
         // Settings link on the plugins list page
         $plugin_file = TPOW_PLUGIN_DIR . 'oliweb-proof-of-work-for-cap.php';
@@ -473,6 +474,8 @@ class Tpow_Settings
 
         if (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'reset') {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('All settings have been reset to defaults.', 'capconnect-for-wp') . '</p></div>';
+        } elseif (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'reset-styles') {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Style settings have been reset to defaults.', 'capconnect-for-wp') . '</p></div>';
         }
         ?>
         <div class="wrap">
@@ -535,13 +538,18 @@ class Tpow_Settings
                 <!-- Styling Tab -->
                 <div id="tpow-tab-styling" class="tpow-tab-content" style="display: none;">
                     <?php $this->renderSettingsSection('tpow-settings', 'tpow_styling_section'); ?>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccd0d4;">
+                        <button type="button" id="tpow-reset-styles-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
+                            <?php esc_html_e('Reset Style Settings', 'capconnect-for-wp'); ?>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="tpow-submit-wrapper">
                     <p class="submit" style="display: flex; align-items: center; gap: 16px;">
                         <?php submit_button(__('Save Settings', 'capconnect-for-wp'), 'primary', 'submit', false); ?>
                         <button type="button" id="tpow-reset-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
-                            <?php esc_html_e('Reset Settings', 'capconnect-for-wp'); ?>
+                            <?php esc_html_e('Reset All Settings', 'capconnect-for-wp'); ?>
                         </button>
                     </p>
                 </div>
@@ -550,6 +558,11 @@ class Tpow_Settings
             <form id="tpow-reset-form" method="post" action="" style="display:none;">
                 <?php wp_nonce_field('tpow_reset_settings_nonce', 'tpow_reset_nonce'); ?>
                 <input type="hidden" name="tpow_reset_settings" value="1" />
+            </form>
+
+            <form id="tpow-reset-styles-form" method="post" action="" style="display:none;">
+                <?php wp_nonce_field('tpow_reset_style_settings_nonce', 'tpow_reset_style_nonce'); ?>
+                <input type="hidden" name="tpow_reset_style_settings" value="1" />
             </form>
 
             <script>
@@ -653,6 +666,14 @@ class Tpow_Settings
                     e.preventDefault();
                     if (confirm('<?php echo esc_js(__('Are you sure you want to reset all settings? This will clear all configuration and styles.', 'capconnect-for-wp')); ?>')) {
                         $('#tpow-reset-form').submit();
+                    }
+                });
+
+                // Reset styles confirmation
+                $('#tpow-reset-styles-trigger-btn').on('click', function (e) {
+                    e.preventDefault();
+                    if (confirm('<?php echo esc_js(__('Are you sure you want to reset all style settings to defaults?', 'capconnect-for-wp')); ?>')) {
+                        $('#tpow-reset-styles-form').submit();
                     }
                 });
             });
@@ -946,6 +967,42 @@ class Tpow_Settings
         }
 
         wp_safe_redirect(add_query_arg('settings-updated', 'reset', admin_url('options-general.php?page=tpow-settings')));
+        exit;
+    }
+
+    public function handleResetStyleSettings(): void
+    {
+        if (! isset($_POST['tpow_reset_style_settings'])) {
+            return;
+        }
+
+        check_admin_referer('tpow_reset_style_settings_nonce', 'tpow_reset_style_nonce');
+
+        if (! current_user_can('manage_options')) {
+            wp_die(__('Unauthorized.', 'capconnect-for-wp'));
+        }
+
+        $options_to_delete = [
+            'tpow_background',
+            'tpow_color',
+            'tpow_border_color',
+            'tpow_border_radius',
+            'tpow_checkbox_background',
+            'tpow_checkbox_checkmark_color',
+            'tpow_checkbox_border_color',
+            'tpow_checkbox_border_style',
+            'tpow_checkbox_border_width',
+            'tpow_checkbox_border_radius',
+            'tpow_spinner_color',
+            'tpow_spinner_background',
+            'tpow_hide_attribution',
+        ];
+
+        foreach ($options_to_delete as $opt) {
+            delete_option($opt);
+        }
+
+        wp_safe_redirect(add_query_arg('settings-updated', 'reset-styles', admin_url('options-general.php?page=tpow-settings') . '#styling'));
         exit;
     }
 
