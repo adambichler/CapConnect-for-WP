@@ -157,4 +157,4 @@ La désinstallation via l'interface WordPress supprime automatiquement toutes le
 
 ## Licence
 
-MIT
+GPL-2.0-or-later
