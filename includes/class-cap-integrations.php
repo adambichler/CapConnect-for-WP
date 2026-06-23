@@ -175,10 +175,8 @@ class Tpow_Integrations
 
     private function getToken(): string
     {
-        $field = (string) get_option('tpow_token_field', 'cap-token');
-
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the surrounding WordPress/WooCommerce context before this hook runs.
-        return sanitize_text_field(wp_unslash((string) ($_POST[$field] ?? '')));
+        return sanitize_text_field(wp_unslash((string) ($_POST['cap-token'] ?? '')));
     }
 
     private function isWooCommerceActive(): bool

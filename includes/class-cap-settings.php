@@ -114,11 +114,6 @@ class Tpow_Settings
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_token_field', [
-            'type'              => 'string',
-            'sanitize_callback' => 'sanitize_key',
-            'default'           => 'cap-token',
-        ]);
 
         register_setting('tpow_settings_group', 'tpow_timeout', [
             'type'              => 'integer',
@@ -183,13 +178,6 @@ class Tpow_Settings
             'tpow_main_section'
         );
 
-        add_settings_field(
-            'tpow_token_field',
-            __('Token Field Name', 'capconnect-for-wp'),
-            [$this, 'renderTokenFieldField'],
-            'tpow-settings',
-            'tpow_main_section'
-        );
 
         add_settings_field(
             'tpow_timeout',
@@ -304,12 +292,6 @@ class Tpow_Settings
         echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'capconnect-for-wp') . '</p>';
     }
 
-    public function renderTokenFieldField(): void
-    {
-        $value = get_option('tpow_token_field', 'cap-token');
-        echo '<input type="text" name="tpow_token_field" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__('The name of the hidden field injected by the Cap widget.', 'capconnect-for-wp') . '</p>';
-    }
 
     public function renderTimeoutField(): void
     {

@@ -29,7 +29,7 @@ class Tpow_Widget
             'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(TPOW_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';'
             . 'window.TPOW_CONFIG = ' . wp_json_encode([
                 'apiEndpoint' => Tpow_Settings::getEndpoint(),
-                'tokenField'  => (string) get_option('tpow_token_field', 'cap-token'),
+                'tokenField'  => 'cap-token',
             ]) . ';',
             'before'
         );
@@ -119,7 +119,7 @@ JS;
 
     public function renderProgrammaticWidget(): string
     {
-        $field = (string) get_option('tpow_token_field', 'cap-token');
+        $field = 'cap-token';
         return '<input type="hidden" name="' . esc_attr($field) . '">';
     }
 

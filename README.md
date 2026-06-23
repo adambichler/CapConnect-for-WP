@@ -33,7 +33,6 @@ Accéder à **Réglages > CapConnect** dans l'administration WordPress.
 | Instance URL | URL de votre instance Cap auto-hébergée (ex : `https://cap.example.com`) | — |
 | Site Key | Clé du site configurée sur votre instance Cap | — |
 | Secret Key | Clé secrète générée dans le tableau de bord Cap (ne jamais exposer côté client) | — |
-| Token Field Name | Nom du champ hidden injecté par le widget | `cap-token` |
 | Timeout (seconds) | Délai avant abandon de la requête vers `/siteverify` | `5` |
 | Fail Open | Si coché, laisse passer la requête en cas d'erreur de communication avec Cap | décoché |
 | Hide Attribution Link | Si coché, masque le lien « Cap » en bas à droite du widget | décoché |
