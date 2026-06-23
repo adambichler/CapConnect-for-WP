@@ -213,6 +213,42 @@ class Tpow_Settings
             'default'           => '#374151',
         ]);
 
+        register_setting('tpow_settings_group', 'tpow_protect_login', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => true,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_protect_register', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => true,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_protect_lostpassword', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => true,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_protect_comments', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => true,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_protect_woocommerce', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => true,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_protect_gravityforms', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'boolval',
+            'default'           => true,
+        ]);
+
         add_settings_section(
             'tpow_main_section',
             __('Cap Instance', 'capconnect-for-wp'),
@@ -275,6 +311,85 @@ class Tpow_Settings
             [$this, 'renderHideAttributionField'],
             'tpow-settings',
             'tpow_main_section'
+        );
+
+        add_settings_section(
+            'tpow_forms_section',
+            __('Form Protection', 'capconnect-for-wp'),
+            [$this, 'renderFormsSectionDescription'],
+            'tpow-settings'
+        );
+
+        add_settings_field(
+            'tpow_protect_login',
+            __('Login Form', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_login',
+                'label' => __('Protect the login form', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_protect_register',
+            __('Registration Form', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_register',
+                'label' => __('Protect the registration form', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_protect_lostpassword',
+            __('Lost Password Form', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_lostpassword',
+                'label' => __('Protect the lost password and password reset forms', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_protect_comments',
+            __('Comments Form', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_comments',
+                'label' => __('Protect the comments form', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_protect_woocommerce',
+            __('WooCommerce Checkout', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_woocommerce',
+                'label' => __('Protect the WooCommerce checkout form', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_protect_gravityforms',
+            __('Gravity Forms', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_gravityforms',
+                'label' => __('Protect Gravity Forms submissions', 'capconnect-for-wp'),
+            ]
         );
 
         add_settings_section(
@@ -465,6 +580,34 @@ class Tpow_Settings
         echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'capconnect-for-wp') . '</label>';
     }
 
+    public function renderFormsSectionDescription(): void
+    {
+        echo '<p class="description">' . esc_html__('Select which WordPress forms you want to protect using Cap.', 'capconnect-for-wp') . '</p>';
+    }
+
+    public function renderCheckboxField(array $args): void
+    {
+        $field = $args['field'];
+        $label = $args['label'];
+        $value = (bool) get_option($field, true);
+
+        $disabled = false;
+
+        if ($field === 'tpow_protect_woocommerce' && ! class_exists('WooCommerce')) {
+            $disabled = true;
+        } elseif ($field === 'tpow_protect_gravityforms' && ! class_exists('GFForms')) {
+            $disabled = true;
+        }
+
+        if ($disabled) {
+            echo '<input type="hidden" name="' . esc_attr($field) . '" value="' . ($value ? '1' : '0') . '" />';
+            echo '<label><input type="checkbox" value="1"' . checked($value, true, false) . ' disabled="disabled" /> ';
+        } else {
+            echo '<label><input type="checkbox" name="' . esc_attr($field) . '" value="1"' . checked($value, true, false) . ' /> ';
+        }
+        echo esc_html($label) . '</label>';
+    }
+
     public function enqueueAdminScripts(): void
     {
         wp_enqueue_style('wp-color-picker');
@@ -473,6 +616,15 @@ class Tpow_Settings
             'wp-color-picker',
             'jQuery(function($){ $(".tpow-color-picker").wpColorPicker(); });'
         );
+
+        $custom_css = '
+            input[type="checkbox"]:disabled {
+                filter: grayscale(100%);
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        ';
+        wp_add_inline_style('wp-color-picker', $custom_css);
     }
 
     public function renderStylingSectionDescription(): void
@@ -647,6 +799,12 @@ class Tpow_Settings
             'tpow_checkbox_border_radius',
             'tpow_spinner_color',
             'tpow_spinner_background',
+            'tpow_protect_login',
+            'tpow_protect_register',
+            'tpow_protect_lostpassword',
+            'tpow_protect_comments',
+            'tpow_protect_woocommerce',
+            'tpow_protect_gravityforms',
         ];
 
         foreach ($options_to_delete as $opt) {

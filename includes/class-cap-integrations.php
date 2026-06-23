@@ -22,30 +22,56 @@ class Tpow_Integrations
         $this->initCommentIntegration();
         $this->initLoginIntegration();
         $this->initRegisterIntegration();
+        $this->initLostPasswordIntegration();
         $this->initWooCommerceIntegration();
         $this->initGravityFormsIntegration();
     }
 
     private function initCommentIntegration(): void
     {
+        if (! get_option('tpow_protect_comments', true)) {
+            return;
+        }
         add_action('comment_form_after_fields', [$this, 'renderWidgetComment']);
         add_filter('preprocess_comment', [$this, 'validateCommentToken']);
     }
 
     private function initLoginIntegration(): void
     {
+        if (! get_option('tpow_protect_login', true)) {
+            return;
+        }
         add_action('login_form', [$this, 'renderWidgetLogin']);
         add_filter('wp_authenticate_user', [$this, 'validateLoginToken'], 10, 2);
     }
 
     private function initRegisterIntegration(): void
     {
+        if (! get_option('tpow_protect_register', true)) {
+            return;
+        }
         add_action('register_form', [$this, 'renderWidgetRegister']);
         add_filter('registration_errors', [$this, 'validateRegisterToken'], 10, 3);
     }
 
+    private function initLostPasswordIntegration(): void
+    {
+        if (! get_option('tpow_protect_lostpassword', true)) {
+            return;
+        }
+        add_action('lostpassword_form', [$this, 'renderWidgetLostPassword']);
+        add_action('lostpassword_post', [$this, 'validateLostPasswordToken'], 10, 1);
+
+        add_action('resetpass_form', [$this, 'renderWidgetResetPassword']);
+        add_action('validate_password_reset', [$this, 'validateResetPasswordToken'], 10, 2);
+    }
+
     private function initWooCommerceIntegration(): void
     {
+        if (! get_option('tpow_protect_woocommerce', true)) {
+            return;
+        }
+
         if (! $this->isWooCommerceActive()) {
             return;
         }
@@ -56,6 +82,10 @@ class Tpow_Integrations
 
     private function initGravityFormsIntegration(): void
     {
+        if (! get_option('tpow_protect_gravityforms', true)) {
+            return;
+        }
+
         if (! $this->isGravityFormsActive()) {
             return;
         }
@@ -77,6 +107,18 @@ class Tpow_Integrations
     }
 
     public function renderWidgetRegister(): void
+    {
+        $this->widget->enqueueAssets();
+        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    }
+
+    public function renderWidgetLostPassword(): void
+    {
+        $this->widget->enqueueAssets();
+        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    }
+
+    public function renderWidgetResetPassword(): void
     {
         $this->widget->enqueueAssets();
         echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -133,6 +175,34 @@ class Tpow_Integrations
         }
 
         return $errors;
+    }
+
+    public function validateLostPasswordToken(\WP_Error $errors): void
+    {
+        $token = $this->getToken();
+
+        if (! $this->verifier->verify($token)) {
+            $errors->add(
+                'tpow_verification_failed',
+                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+            );
+        }
+    }
+
+    public function validateResetPasswordToken(\WP_Error $errors, $user): void
+    {
+        if (! isset($_POST['cap-token'])) {
+            return;
+        }
+
+        $token = $this->getToken();
+
+        if (! $this->verifier->verify($token)) {
+            $errors->add(
+                'tpow_verification_failed',
+                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+            );
+        }
     }
 
     public function validateCheckoutToken(): void
