@@ -39,6 +39,12 @@ Access **Settings > CapConnect** in the WordPress administration panel. The opti
 | Timeout (seconds) | Delay before abandoning the request to `/siteverify` | `5` |
 | Fail Open | If checked, lets the request through in case of communication error with Cap | unchecked |
 
+#### Fail-open mode
+
+By default, any communication error with the Cap instance (network, timeout, 5xx error) blocks the request. Enabling **Fail Open** reverses this behavior: infrastructure errors will let the request through.
+
+**An explicitly invalid token (`success: false`) is always rejected**, regardless of this setting.
+
 ### Forms
 
 Toggle protection for individual native forms:
@@ -56,12 +62,6 @@ Customize the look and feel of the visible widget (only active when **Verificati
 - **Checkbox Styles**: Checkbox Background, Checkmark Color, Border Color, Border Style, Border Width (px), and Checkbox Border Radius (px)
 - **Spinner Styles**: Spinner Background Color and Spinner Color
 - **Hide Attribution Link**: Hides the "Cap" attribution link in the bottom-right of the widget
-
-### Fail-open mode
-
-By default, any communication error with the Cap instance (network, timeout, 5xx error) blocks the request. Enabling **Fail Open** reverses this behavior: infrastructure errors will let the request through.
-
-**An explicitly invalid token (`success: false`) is always rejected**, regardless of this setting.
 
 ---
 
