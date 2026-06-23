@@ -34,14 +34,14 @@ cap-widget {
     --cap-checkbox-border:            1px solid #d8d9da; /* urg_gray-300 */
     --cap-checkbox-border-radius:     5px;
 
-    /* ── Spinner — couleur primaire URG ───────────────────── */
-    --cap-spinner-color:              #ed1a23;     /* urg_red-600  */
+    /* ── Spinner — couleur neutre ───────────────────── */
+    --cap-spinner-color:              #374151;     /* urg_gray-700  */
     --cap-spinner-background-color:   #eaeaea;     /* urg_gray-200 */
     --cap-spinner-thickness:          3;
 
     /* ── État invalide ────────────────────────────────────── */
-    --cap-invalid-border-color:       #ed1a23;     /* urg_red-600  */
-    --cap-invalid-ring-color:         #ed1a2333;   /* urg_red-600 / 20% */
+    --cap-invalid-border-color:       #374151;     /* urg_gray-700  */
+    --cap-invalid-ring-color:         #37415133;   /* urg_gray-700 / 20% */
 }
 
 /* ── Lien d'attribution Cap (optionnel) ───────────────────────────────

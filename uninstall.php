@@ -17,3 +17,16 @@ delete_option('tpow_timeout');
 delete_option('tpow_fail_open');
 delete_option('tpow_hide_attribution');
 delete_option('tpow_mode');
+
+delete_option('tpow_background');
+delete_option('tpow_color');
+delete_option('tpow_border_color');
+delete_option('tpow_checkbox_background');
+delete_option('tpow_spinner_color');
+delete_option('tpow_spinner_background');
+delete_option('tpow_checkbox_border_color');
+delete_option('tpow_checkbox_border_style');
+delete_option('tpow_checkbox_border_width');
+delete_option('tpow_border_radius');
+delete_option('tpow_checkbox_border_radius');
+delete_option('tpow_checkbox_checkmark_color');
