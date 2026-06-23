@@ -14,34 +14,37 @@
  */
 
 cap-widget {
-    /* ── Conteneur ────────────────────────────────────────── */
-    --cap-background:       #ffffff;
-    --cap-border-color:     #d8d9da;        /* urg_gray-300     */
-    --cap-border-radius:    8px;
-    --cap-widget-width:     250px;
-    --cap-widget-height:    58px;
-    --cap-widget-padding:   14px;
-    --cap-gap:              12px;
+  display: block !important;
+  clear: both !important;
 
-    /* ── Texte ────────────────────────────────────────────── */
-    --cap-color:            #374151;        /* urg_gray-700     */
-    --cap-font:             inherit;
+  /* ── Conteneur ────────────────────────────────────────── */
+  --cap-background: #ffffff;
+  --cap-border-color: #d8d9da; /* urg_gray-300     */
+  --cap-border-radius: 8px;
+  --cap-widget-width: 100%;
+  --cap-widget-height: 58px;
+  --cap-widget-padding: 14px;
+  --cap-gap: 12px;
 
-    /* ── Case à cocher ────────────────────────────────────── */
-    --cap-checkbox-size:              24px;
-    --cap-checkbox-margin:            2px;
-    --cap-checkbox-background:        #f9f9f9;     /* urg_gray-50  */
-    --cap-checkbox-border:            1px solid #d8d9da; /* urg_gray-300 */
-    --cap-checkbox-border-radius:     5px;
+  /* ── Texte ────────────────────────────────────────────── */
+  --cap-color: #374151; /* urg_gray-700     */
+  --cap-font: inherit;
 
-    /* ── Spinner — couleur neutre ───────────────────── */
-    --cap-spinner-color:              #374151;     /* urg_gray-700  */
-    --cap-spinner-background-color:   #eaeaea;     /* urg_gray-200 */
-    --cap-spinner-thickness:          3;
+  /* ── Case à cocher ────────────────────────────────────── */
+  --cap-checkbox-size: 24px;
+  --cap-checkbox-margin: 2px;
+  --cap-checkbox-background: #f9f9f9; /* urg_gray-50  */
+  --cap-checkbox-border: 1px solid #d8d9da; /* urg_gray-300 */
+  --cap-checkbox-border-radius: 5px;
 
-    /* ── État invalide ────────────────────────────────────── */
-    --cap-invalid-border-color:       #374151;     /* urg_gray-700  */
-    --cap-invalid-ring-color:         #37415133;   /* urg_gray-700 / 20% */
+  /* ── Spinner — couleur neutre ───────────────────── */
+  --cap-spinner-color: #374151; /* urg_gray-700  */
+  --cap-spinner-background-color: #eaeaea; /* urg_gray-200 */
+  --cap-spinner-thickness: 3;
+
+  /* ── État invalide ────────────────────────────────────── */
+  --cap-invalid-border-color: #374151; /* urg_gray-700  */
+  --cap-invalid-ring-color: #37415133; /* urg_gray-700 / 20% */
 }
 
 /* ── Lien d'attribution Cap (optionnel) ───────────────────────────────
@@ -53,3 +56,9 @@ cap-widget {
  *     display: none;
  * }
  */
+
+.cap-widget-wrapper {
+  display: block !important;
+  margin-bottom: 16px !important;
+  clear: both !important;
+}

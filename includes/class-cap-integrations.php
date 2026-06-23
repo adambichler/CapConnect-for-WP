@@ -97,37 +97,61 @@ class Tpow_Integrations
     public function renderWidgetComment(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
+        }
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetLogin(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
+        }
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetRegister(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
+        }
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetLostPassword(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
+        }
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetResetPassword(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
+        }
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function renderWidgetCheckout(): void
     {
         $this->widget->enqueueAssets();
-        echo $this->widget->renderForMode(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<p class="form-row cap-widget-wrapper">' . $html . '</p>';
+        }
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
     public function validateCommentToken(array $commentData): array
@@ -221,7 +245,12 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
 
-        return $this->widget->renderForMode() . $button;
+        $html = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $html = '<div class="cap-widget-wrapper">' . $html . '</div>';
+        }
+
+        return $html . $button;
     }
 
     public function validateGravityFormsToken(array $validationResult): array
