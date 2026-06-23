@@ -305,13 +305,7 @@ class Tpow_Settings
             'tpow_main_section'
         );
 
-        add_settings_field(
-            'tpow_hide_attribution',
-            __('Hide Attribution Link', 'capconnect-for-wp'),
-            [$this, 'renderHideAttributionField'],
-            'tpow-settings',
-            'tpow_main_section'
-        );
+
 
         add_settings_section(
             'tpow_forms_section',
@@ -431,6 +425,44 @@ class Tpow_Settings
                 'class' => 'tpow-styling-field',
             ]
         );
+
+        add_settings_field(
+            'tpow_hide_attribution',
+            __('Hide Attribution Link', 'capconnect-for-wp'),
+            [$this, 'renderHideAttributionField'],
+            'tpow-settings',
+            'tpow_styling_section'
+        );
+    }
+
+    /**
+     * Renders a single settings section by ID.
+     */
+    private function renderSettingsSection(string $page, string $section_id): void
+    {
+        global $wp_settings_sections, $wp_settings_fields;
+
+        if (! isset($wp_settings_sections[$page][$section_id])) {
+            return;
+        }
+
+        $section = $wp_settings_sections[$page][$section_id];
+
+        if ($section['title']) {
+            echo "<h2>" . esc_html($section['title']) . "</h2>\n";
+        }
+
+        if ($section['callback']) {
+            call_user_func($section['callback'], $section);
+        }
+
+        if (! isset($wp_settings_fields[$page][$section_id])) {
+            return;
+        }
+
+        echo '<table class="form-table" role="presentation">';
+        do_settings_fields($page, $section_id);
+        echo '</table>';
     }
 
     public function renderPage(): void
@@ -445,31 +477,80 @@ class Tpow_Settings
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+
+            <style>
+                .tpow-nav-tab-wrapper {
+                    margin-bottom: 20px;
+                }
+                .tpow-nav-tab-wrapper .nav-tab {
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .tpow-tab-content {
+                    background: #fff;
+                    border: 1px solid #ccd0d4;
+                    border-top: none;
+                    padding: 20px;
+                    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+                }
+                .tpow-test-connection-wrapper {
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ccd0d4;
+                }
+                .tpow-submit-wrapper {
+                    margin-top: 20px;
+                    padding: 0;
+                }
+            </style>
+
+            <h2 class="nav-tab-wrapper tpow-nav-tab-wrapper">
+                <a href="#connection" class="nav-tab nav-tab-active" data-tab="connection"><?php esc_html_e('Connection', 'capconnect-for-wp'); ?></a>
+                <a href="#forms" class="nav-tab" data-tab="forms"><?php esc_html_e('Forms', 'capconnect-for-wp'); ?></a>
+                <a href="#styling" class="nav-tab" data-tab="styling"><?php esc_html_e('Styling', 'capconnect-for-wp'); ?></a>
+            </h2>
+
             <form method="post" action="options.php">
-                <?php
-                settings_fields('tpow_settings_group');
-                do_settings_sections('tpow-settings');
-                ?>
-                <p class="submit" style="display: flex; align-items: center; gap: 16px;">
-                    <?php submit_button(__('Save Settings', 'capconnect-for-wp'), 'primary', 'submit', false); ?>
-                    <button type="button" id="tpow-reset-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
-                        <?php esc_html_e('Reset Settings', 'capconnect-for-wp'); ?>
-                    </button>
-                </p>
+                <?php settings_fields('tpow_settings_group'); ?>
+
+                <!-- Connection Tab -->
+                <div id="tpow-tab-connection" class="tpow-tab-content">
+                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_main_section'); ?>
+                    
+                    <div class="tpow-test-connection-wrapper">
+                        <h2><?php esc_html_e('Test Connection', 'capconnect-for-wp'); ?></h2>
+                        <p><?php esc_html_e('Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first.', 'capconnect-for-wp'); ?></p>
+                        <button type="button" id="tpow-test-btn" class="button button-secondary">
+                            <?php esc_html_e('Test connection', 'capconnect-for-wp'); ?>
+                        </button>
+                        <span id="tpow-test-result" style="margin-left:10px;line-height:30px;vertical-align:middle;"></span>
+                    </div>
+                </div>
+
+                <!-- Forms Tab -->
+                <div id="tpow-tab-forms" class="tpow-tab-content" style="display: none;">
+                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_forms_section'); ?>
+                </div>
+
+                <!-- Styling Tab -->
+                <div id="tpow-tab-styling" class="tpow-tab-content" style="display: none;">
+                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_styling_section'); ?>
+                </div>
+
+                <div class="tpow-submit-wrapper">
+                    <p class="submit" style="display: flex; align-items: center; gap: 16px;">
+                        <?php submit_button(__('Save Settings', 'capconnect-for-wp'), 'primary', 'submit', false); ?>
+                        <button type="button" id="tpow-reset-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
+                            <?php esc_html_e('Reset Settings', 'capconnect-for-wp'); ?>
+                        </button>
+                    </p>
+                </div>
             </form>
 
             <form id="tpow-reset-form" method="post" action="" style="display:none;">
                 <?php wp_nonce_field('tpow_reset_settings_nonce', 'tpow_reset_nonce'); ?>
                 <input type="hidden" name="tpow_reset_settings" value="1" />
             </form>
-
-            <hr>
-            <h2><?php esc_html_e('Test Connection', 'capconnect-for-wp'); ?></h2>
-            <p><?php esc_html_e('Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first.', 'capconnect-for-wp'); ?></p>
-            <button id="tpow-test-btn" class="button button-secondary">
-                <?php esc_html_e('Test connection', 'capconnect-for-wp'); ?>
-            </button>
-            <span id="tpow-test-result" style="margin-left:10px;line-height:30px;vertical-align:middle;"></span>
 
             <script>
             (function () {
@@ -502,19 +583,72 @@ class Tpow_Settings
             </script>
             <script>
             jQuery(function ($) {
+                // Tab switching logic
+                var $tabs = $('.tpow-nav-tab-wrapper .nav-tab');
+                var $tabContents = $('.tpow-tab-content');
+
+                function switchTab(tabId) {
+                    // Update active tab header class
+                    $tabs.removeClass('nav-tab-active');
+                    $tabs.filter('[data-tab="' + tabId + '"]').addClass('nav-tab-active');
+
+                    // Show corresponding content, hide others
+                    $tabContents.hide();
+                    $('#tpow-tab-' + tabId).show();
+
+                    // Save state to sessionStorage & update window hash
+                    sessionStorage.setItem('tpow_active_tab', tabId);
+                    window.location.hash = tabId;
+                }
+
+                $tabs.on('click', function (e) {
+                    e.preventDefault();
+                    var tabId = $(this).data('tab');
+                    switchTab(tabId);
+                });
+
+                // Determine initial tab on page load
+                var initialTab = 'connection';
+                var hash = window.location.hash.substring(1);
+                var storedTab = sessionStorage.getItem('tpow_active_tab');
+
+                if (hash && $('#tpow-tab-' + hash).length) {
+                    initialTab = hash;
+                } else if (storedTab && $('#tpow-tab-' + storedTab).length) {
+                    initialTab = storedTab;
+                }
+
+                // Dynamic styling tab visibility based on Verification Mode
                 var $modeSelect = $('select[name="tpow_mode"]');
-                function toggleStylingSection() {
+                function toggleStylingTab() {
                     var isWidget = $modeSelect.val() === 'widget';
-                    $('.tpow-styling-field').closest('tr').toggle(isWidget);
-                    var $desc = $('#tpow-styling-section-desc');
-                    if ($desc.length) {
-                        $desc.toggle(isWidget);
-                        $desc.prev('h2').toggle(isWidget);
+                    var $stylingTab = $('.tpow-nav-tab-wrapper .nav-tab[data-tab="styling"]');
+                    
+                    if (isWidget) {
+                        $stylingTab.show();
+                    } else {
+                        $stylingTab.hide();
+                        // If current active tab is styling but styling is hidden, fall back to connection tab
+                        var activeTab = $('.tpow-nav-tab-wrapper .nav-tab-active').data('tab');
+                        if (activeTab === 'styling') {
+                            switchTab('connection');
+                        }
                     }
                 }
-                $modeSelect.on('change', toggleStylingSection);
-                toggleStylingSection();
 
+                $modeSelect.on('change', toggleStylingTab);
+                
+                // Initialize styling tab visibility first, then switch to initial tab
+                toggleStylingTab();
+                
+                // If initialTab is 'styling' but it's not a widget mode, force it to 'connection'
+                if (initialTab === 'styling' && $modeSelect.val() !== 'widget') {
+                    initialTab = 'connection';
+                }
+                
+                switchTab(initialTab);
+
+                // Reset confirmation
                 $('#tpow-reset-trigger-btn').on('click', function (e) {
                     e.preventDefault();
                     if (confirm('<?php echo esc_js(__('Are you sure you want to reset all settings? This will clear all configuration and styles.', 'capconnect-for-wp')); ?>')) {
