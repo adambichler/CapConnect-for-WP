@@ -30,7 +30,25 @@ class Tpow_Widget
             . 'window.TPOW_CONFIG = ' . wp_json_encode([
                 'apiEndpoint' => Tpow_Settings::getEndpoint(),
                 'tokenField'  => 'cap-token',
-            ]) . ';',
+                'ajaxUrl'     => admin_url('admin-ajax.php'),
+                'nonce'       => wp_create_nonce('tpow_report_error'),
+            ]) . ';'
+            . 'document.addEventListener("error", function (e) {'
+            . '    if (e.detail && e.detail.isCap) {'
+            . '        var msg = e.detail.message || "Unknown widget error";'
+            . '        var cfg = window.TPOW_CONFIG;'
+            . '        if (cfg && cfg.ajaxUrl) {'
+            . '            var body = "action=tpow_report_frontend_error&nonce=" + encodeURIComponent(cfg.nonce) + "&error_message=" + encodeURIComponent(msg);'
+            . '            fetch(cfg.ajaxUrl, {'
+            . '                method: "POST",'
+            . '                body: body,'
+            . '                headers: { "Content-Type": "application/x-www-form-urlencoded" }'
+            . '            }).catch(function(err) {'
+            . '                console.error("[cap] Failed to report error:", err);'
+            . '            });'
+            . '        }'
+            . '    }'
+            . '}, true);',
             'before'
         );
 

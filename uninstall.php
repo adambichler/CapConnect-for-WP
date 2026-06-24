@@ -8,6 +8,8 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
     exit;
 }
 
+wp_clear_scheduled_hook('tpow_hourly_connection_check');
+
 delete_option('tpow_endpoint');
 delete_option('tpow_instance_url');
 delete_option('tpow_site_key');
@@ -15,6 +17,9 @@ delete_option('tpow_secret');
 delete_option('tpow_token_field');
 delete_option('tpow_timeout');
 delete_option('tpow_fail_open');
+delete_option('tpow_alert_email');
+delete_option('tpow_alert_sent');
+delete_option('tpow_connection_failed_notice');
 delete_option('tpow_hide_attribution');
 delete_option('tpow_mode');
 

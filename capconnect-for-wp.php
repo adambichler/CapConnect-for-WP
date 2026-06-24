@@ -54,3 +54,18 @@ require_once TPOW_PLUGIN_DIR . 'includes/class-cap-integrations.php';
 (new Tpow_Settings())->init();
 (new Tpow_Widget())->init();
 (new Tpow_Integrations())->init();
+
+register_activation_hook(__FILE__, 'tpow_activate_plugin');
+register_deactivation_hook(__FILE__, 'tpow_deactivate_plugin');
+
+function tpow_activate_plugin(): void
+{
+    if (! wp_next_scheduled('tpow_hourly_connection_check')) {
+        wp_schedule_event(time(), 'hourly', 'tpow_hourly_connection_check');
+    }
+}
+
+function tpow_deactivate_plugin(): void
+{
+    wp_clear_scheduled_hook('tpow_hourly_connection_check');
+}

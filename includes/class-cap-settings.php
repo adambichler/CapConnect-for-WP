@@ -13,8 +13,18 @@ class Tpow_Settings
         add_action('admin_menu', [$this, 'addMenuPage']);
         add_action('admin_init', [$this, 'registerSettings']);
         add_action('wp_ajax_tpow_test_connection', [$this, 'handleTestConnection']);
+        add_action('wp_ajax_tpow_report_frontend_error', [$this, 'handleReportFrontendError']);
+        add_action('wp_ajax_nopriv_tpow_report_frontend_error', [$this, 'handleReportFrontendError']);
         add_action('admin_init', [$this, 'handleResetSettings']);
         add_action('admin_init', [$this, 'handleResetStyleSettings']);
+        add_action('tpow_hourly_connection_check', [$this, 'runHourlyCheck']);
+        add_action('admin_notices', [$this, 'displayConnectionFailedNotice']);
+
+        // Reset alert status and verify connection when credentials or alert settings change
+        add_action('update_option_tpow_instance_url', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_tpow_site_key', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_tpow_secret', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_tpow_alert_email', [$this, 'handleCredentialUpdate']);
 
         // Settings link on the plugins list page
         $plugin_file = TPOW_PLUGIN_DIR . 'capconnect-for-wp.php';
@@ -46,7 +56,7 @@ class Tpow_Settings
         if ($instance !== '' && $site_key !== '') {
             return rtrim($instance, '/') . '/' . ltrim($site_key, '/');
         }
-        return (string) get_option('tpow_endpoint', '');
+        return '';
     }
 
     /**
@@ -128,6 +138,12 @@ class Tpow_Settings
             'type'              => 'boolean',
             'sanitize_callback' => 'boolval',
             'default'           => false,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_alert_email', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_email',
+            'default'           => '',
         ]);
 
         register_setting('tpow_settings_group', 'tpow_hide_attribution', [
@@ -302,6 +318,14 @@ class Tpow_Settings
             'tpow_fail_open',
             __('Fail Open', 'capconnect-for-wp'),
             [$this, 'renderFailOpenField'],
+            'tpow-settings',
+            'tpow_main_section'
+        );
+
+        add_settings_field(
+            'tpow_alert_email',
+            __('Alert Email', 'capconnect-for-wp'),
+            [$this, 'renderAlertEmailField'],
             'tpow-settings',
             'tpow_main_section'
         );
@@ -576,10 +600,19 @@ class Tpow_Settings
                     result.style.color = '#666';
                     result.textContent = '<?php esc_html_e('Testing…', 'capconnect-for-wp'); ?>';
 
+                    var instanceUrl = document.querySelector('input[name="tpow_instance_url"]').value;
+                    var siteKey = document.querySelector('input[name="tpow_site_key"]').value;
+                    var secret = document.querySelector('input[name="tpow_secret"]').value;
+
+                    var body = 'action=tpow_test_connection&nonce=' + encodeURIComponent(nonce) +
+                               '&instance_url=' + encodeURIComponent(instanceUrl) +
+                               '&site_key=' + encodeURIComponent(siteKey) +
+                               '&secret=' + encodeURIComponent(secret);
+
                     fetch(ajaxurl, {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body:    'action=tpow_test_connection&nonce=' + encodeURIComponent(nonce),
+                        body:    body,
                     })
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
@@ -726,6 +759,13 @@ class Tpow_Settings
         $value = (bool) get_option('tpow_fail_open', false);
         echo '<label><input type="checkbox" name="tpow_fail_open" value="1"' . checked($value, true, false) . ' /> ';
         echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'capconnect-for-wp') . '</label>';
+    }
+
+    public function renderAlertEmailField(): void
+    {
+        $value = get_option('tpow_alert_email', '');
+        echo '<input type="email" name="tpow_alert_email" value="' . esc_attr($value) . '" class="regular-text" placeholder="admin@example.com" />';
+        echo '<p class="description">' . esc_html__('Get notified by email if the connection to your Cap server fails (either during the hourly check or on a frontend verification attempt). Leave empty to disable alerts.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderHideAttributionField(): void
@@ -940,6 +980,9 @@ class Tpow_Settings
             'tpow_secret',
             'tpow_timeout',
             'tpow_fail_open',
+            'tpow_alert_email',
+            'tpow_alert_sent',
+            'tpow_connection_failed_notice',
             'tpow_hide_attribution',
             'tpow_mode',
             'tpow_background',
@@ -1006,6 +1049,264 @@ class Tpow_Settings
         exit;
     }
 
+    public static function checkConnection(string $instance_url = '', string $site_key = '', string $secret = ''): array
+    {
+        if ($instance_url === '') {
+            $instance_url = (string) get_option('tpow_instance_url', '');
+        }
+        if ($site_key === '') {
+            $site_key = (string) get_option('tpow_site_key', '');
+        }
+        if ($secret === '') {
+            $secret = (string) get_option('tpow_secret', '');
+        }
+
+        if (empty($instance_url)) {
+            return [
+                'success' => false,
+                'message' => __('No instance URL configured.', 'capconnect-for-wp'),
+            ];
+        }
+
+        if (empty($site_key)) {
+            return [
+                'success' => false,
+                'message' => __('No Site Key configured.', 'capconnect-for-wp'),
+            ];
+        }
+
+        if (empty($secret)) {
+            return [
+                'success' => false,
+                'message' => __('Secret Key is empty.', 'capconnect-for-wp'),
+            ];
+        }
+
+        $endpoint = rtrim($instance_url, '/') . '/' . ltrim($site_key, '/');
+
+        // Construct Origin and Referer headers from home_url()
+        $origin = home_url();
+        $parsed = wp_parse_url($origin);
+        $origin_header = '';
+        if ($parsed && isset($parsed['scheme'], $parsed['host'])) {
+            $origin_header = $parsed['scheme'] . '://' . $parsed['host'];
+            if (isset($parsed['port'])) {
+                $origin_header .= ':' . $parsed['port'];
+            }
+        }
+        $referer_header = home_url('/');
+
+        $headers = [
+            'Content-Type' => 'application/json',
+        ];
+        if (!empty($origin_header)) {
+            $headers['Origin'] = $origin_header;
+            $headers['Referer'] = $referer_header;
+        }
+
+        // 1. Check challenge endpoint (verifies URL and Site Key)
+        $url = rtrim($endpoint, '/') . '/challenge';
+
+        $response = wp_remote_post($url, [
+            'timeout'     => 10,
+            'headers'     => $headers,
+            'body'        => '{}',
+            'data_format' => 'body',
+        ]);
+
+        if (is_wp_error($response)) {
+            return [
+                'success' => false,
+                'message' => $response->get_error_message(),
+            ];
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+
+        if ($code !== 200 || empty($data['token'])) {
+            $error_msg = '';
+            if ($code === 403) {
+                $error_msg = __('Forbidden (HTTP 403). The request was blocked. This can occur if "Block Non-Browser User Agents" is enabled on your Cap server, as connection checks from the WordPress backend do not use a browser User-Agent.', 'capconnect-for-wp');
+            } elseif (is_array($data) && !empty($data['error'])) {
+                $error_msg = $data['error'];
+            } else {
+                $error_msg = sprintf(
+                    /* translators: 1: HTTP status code */
+                    __('Server responded with HTTP %d — check your endpoint URL and Site Key.', 'capconnect-for-wp'),
+                    $code
+                );
+            }
+            return [
+                'success' => false,
+                'message' => $error_msg,
+            ];
+        }
+
+        // Verify CORS header for restricted origin
+        $allow_origin = wp_remote_retrieve_header($response, 'access-control-allow-origin');
+        if (!empty($origin_header)) {
+            if (empty($allow_origin) || ($allow_origin !== '*' && strcasecmp($allow_origin, $origin_header) !== 0)) {
+                return [
+                    'success' => false,
+                    'message' => __('Unauthorized origin. The Cap server has restricted access to other domains.', 'capconnect-for-wp'),
+                ];
+            }
+        }
+
+        // 2. Check siteverify endpoint (verifies Secret Key)
+        $verify_url = rtrim($endpoint, '/') . '/siteverify';
+        $verify_response = wp_remote_post($verify_url, [
+            'timeout' => 10,
+            'headers' => array_merge($headers, [
+                'Content-Type' => 'application/json',
+            ]),
+            'body'    => wp_json_encode([
+                'secret'   => $secret,
+                'response' => $site_key . ':dummy:dummy',
+            ]),
+            'data_format' => 'body',
+        ]);
+
+        if (is_wp_error($verify_response)) {
+            return [
+                'success' => false,
+                'message' => __('Failed to contact siteverify endpoint.', 'capconnect-for-wp') . ' ' . $verify_response->get_error_message(),
+            ];
+        }
+
+        $verify_code = wp_remote_retrieve_response_code($verify_response);
+        $verify_body = wp_remote_retrieve_body($verify_response);
+        $verify_data = json_decode($verify_body, true);
+
+        if ($verify_code === 404) {
+            if (is_array($verify_data) && isset($verify_data['error']) && $verify_data['error'] === 'Token not found') {
+                return [
+                    'success' => true,
+                    'message' => __('✓ Connection successful — Cap server is reachable and responding correctly.', 'capconnect-for-wp'),
+                ];
+            }
+            return [
+                'success' => false,
+                'message' => __('Siteverify endpoint not found (HTTP 404). Check your instance URL.', 'capconnect-for-wp'),
+            ];
+        }
+
+        if ($verify_code === 403) {
+            $error_msg = __('Invalid Site Key or Secret Key.', 'capconnect-for-wp');
+            if (is_array($verify_data) && !empty($verify_data['error'])) {
+                $error_msg = $verify_data['error'];
+            }
+            return [
+                'success' => false,
+                'message' => $error_msg,
+            ];
+        }
+
+        $error_msg = '';
+        if (is_array($verify_data) && !empty($verify_data['error'])) {
+            $error_msg = $verify_data['error'];
+        } else {
+            $error_msg = sprintf(
+                /* translators: 1: HTTP status code */
+                __('Siteverify responded with HTTP %d.', 'capconnect-for-wp'),
+                $verify_code
+            );
+        }
+
+        return [
+            'success' => false,
+            'message' => $error_msg,
+        ];
+    }
+
+    public static function sendAlertEmail(string $errorMessage): void
+    {
+        // Set/update the persistent connection failure notice option
+        update_option('tpow_connection_failed_notice', $errorMessage);
+
+        $email = get_option('tpow_alert_email', '');
+        if (empty($email)) {
+            return;
+        }
+
+        // Prevent email spam by checking if alert was already sent for the current downtime
+        if (get_option('tpow_alert_sent')) {
+            return;
+        }
+
+        $subject = sprintf(
+            '[%s] Cap Connection Failed',
+            get_bloginfo('name')
+        );
+
+        $body = sprintf(
+            "Hello,\n\nThe connection to your self-hosted Cap server failed.\n\nError details: %s\n\nPlease check your server and configuration.\n\nBest regards,\nCapConnect for WP",
+            $errorMessage
+        );
+
+        $sent = wp_mail($email, $subject, $body);
+        if ($sent) {
+            update_option('tpow_alert_sent', time());
+        }
+    }
+
+    public function runHourlyCheck(): void
+    {
+        $result = self::checkConnection();
+        if ($result['success']) {
+            $this->clearAlertSent();
+            delete_option('tpow_connection_failed_notice');
+        } else {
+            self::sendAlertEmail($result['message']);
+        }
+    }
+
+    public function clearAlertSent(): void
+    {
+        delete_option('tpow_alert_sent');
+    }
+
+    public function handleCredentialUpdate(): void
+    {
+        $this->clearAlertSent();
+        $result = self::checkConnection();
+        if ($result['success']) {
+            delete_option('tpow_connection_failed_notice');
+        } else {
+            update_option('tpow_connection_failed_notice', $result['message']);
+        }
+    }
+
+    public function displayConnectionFailedNotice(): void
+    {
+        if (! current_user_can('manage_options')) {
+            return;
+        }
+
+        $error = get_option('tpow_connection_failed_notice');
+        if (empty($error)) {
+            return;
+        }
+
+        $settings_url = admin_url('options-general.php?page=tpow-settings');
+        ?>
+        <div class="notice notice-error">
+            <p>
+                <strong><?php esc_html_e('CapConnect Alert:', 'capconnect-for-wp'); ?></strong>
+                <?php
+                echo sprintf(
+                    /* translators: 1: error message, 2: settings link HTML */
+                    esc_html__('Connection to the Cap server is failing. Error: %1$s. Please check your %2$s.', 'capconnect-for-wp'),
+                    esc_html($error),
+                    '<a href="' . esc_url($settings_url) . '">' . esc_html__('settings', 'capconnect-for-wp') . '</a>'
+                );
+                ?>
+            </p>
+        </div>
+        <?php
+    }
+
     public function handleTestConnection(): void
     {
         check_ajax_referer('tpow_test_connection', 'nonce');
@@ -1014,40 +1315,32 @@ class Tpow_Settings
             wp_send_json_error(['message' => __('Unauthorized.', 'capconnect-for-wp')], 403);
         }
 
-        $endpoint = self::getEndpoint();
+        $instance_url = isset($_POST['instance_url']) ? esc_url_raw(wp_unslash($_POST['instance_url'])) : '';
+        $site_key     = isset($_POST['site_key']) ? sanitize_text_field(wp_unslash($_POST['site_key'])) : '';
+        $secret       = isset($_POST['secret']) ? sanitize_text_field(wp_unslash($_POST['secret'])) : '';
 
-        if (empty($endpoint)) {
-            wp_send_json_error(['message' => __('No endpoint URL configured.', 'capconnect-for-wp')]);
+        $result = self::checkConnection($instance_url, $site_key, $secret);
+        if ($result['success']) {
+            $this->clearAlertSent();
+            delete_option('tpow_connection_failed_notice');
+            wp_send_json_success($result);
+        } else {
+            update_option('tpow_connection_failed_notice', $result['message']);
+            wp_send_json_error($result);
+        }
+    }
+
+    public function handleReportFrontendError(): void
+    {
+        check_ajax_referer('tpow_report_error', 'nonce');
+
+        $error_message = isset($_POST['error_message']) ? sanitize_text_field(wp_unslash($_POST['error_message'])) : '';
+
+        if (! empty($error_message)) {
+            self::sendAlertEmail($error_message);
+            wp_send_json_success();
         }
 
-        $url = rtrim($endpoint, '/') . '/challenge';
-
-        $response = wp_remote_post($url, [
-            'timeout'     => 10,
-            'headers'     => ['Content-Type' => 'application/json'],
-            'body'        => '{}',
-            'data_format' => 'body',
-        ]);
-
-        if (is_wp_error($response)) {
-            wp_send_json_error(['message' => $response->get_error_message()]);
-        }
-
-        $code = wp_remote_retrieve_response_code($response);
-        $data = json_decode(wp_remote_retrieve_body($response), true);
-
-        if ($code !== 200 || empty($data['token'])) {
-            wp_send_json_error([
-                'message' => sprintf(
-                    /* translators: 1: HTTP status code */
-                    __('Server responded with HTTP %d — check your endpoint URL.', 'capconnect-for-wp'),
-                    $code
-                ),
-            ]);
-        }
-
-        wp_send_json_success([
-            'message' => __('✓ Connection successful — Cap server is reachable and responding correctly.', 'capconnect-for-wp'),
-        ]);
+        wp_send_json_error(['message' => __('Empty error message.', 'capconnect-for-wp')], 400);
     }
 }

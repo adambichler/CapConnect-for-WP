@@ -59,6 +59,7 @@ After activation, navigate to **Settings > CapConnect**. The settings are divide
     * **Secret Key** — The secret key from your Cap dashboard.
     * **Timeout** — Seconds before abandoning the request to `/siteverify` (default: `5`).
     * **Fail Open** — Allow requests through when the Cap server is unreachable.
+    * **Alert Email** — Email address to receive failure notifications. A cron job checks connection hourly, and frontend failures trigger real-time alerts.
 * **Forms Tab:**
     * Enable or disable protection for: Login Form, Registration Form, Lost Password Form, Comments Form, WooCommerce Checkout, and Gravity Forms.
 * **Styling Tab:**

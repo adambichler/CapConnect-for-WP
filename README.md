@@ -38,12 +38,19 @@ Access **Settings > CapConnect** in the WordPress administration panel. The opti
 | Secret Key | Secret key generated in the Cap dashboard (never expose on the client side) | — |
 | Timeout (seconds) | Delay before abandoning the request to `/siteverify` | `5` |
 | Fail Open | If checked, lets the request through in case of communication error with Cap | unchecked |
+| Alert Email | Email address to receive notifications if connection to the Cap server fails. Leave blank to disable alerts. | — |
 
-#### Fail-open mode
+#### Fail-open mode & Health Check
 
 By default, any communication error with the Cap instance (network, timeout, 5xx error) blocks the request. Enabling **Fail Open** reverses this behavior: infrastructure errors will let the request through.
 
 **An explicitly invalid token (`success: false`) is always rejected**, regardless of this setting.
+
+If an **Alert Email** is set, the plugin:
+1. Runs an hourly cron job that tests connection to the Cap server (by requesting a new challenge). If it fails, an email alert is sent.
+2. Monitors frontend validation requests. If a connection failure (network timeout/error, or non-2xx status code) occurs during a frontend captcha completion, an email alert is sent immediately.
+
+To avoid inbox spam, once an alert is sent, further alerts are muted until the connection recovers successfully (either verified by a successful hourly check, a successful settings page connection test, or when settings are updated).
 
 ### Forms
 
@@ -169,11 +176,16 @@ Content-Security-Policy:
 
 Uninstalling via the WordPress interface automatically deletes all saved options from the database:
 
+- `tpow_endpoint`
 - `tpow_instance_url`
 - `tpow_site_key`
 - `tpow_secret`
+- `tpow_token_field`
 - `tpow_timeout`
 - `tpow_fail_open`
+- `tpow_alert_email`
+- `tpow_alert_sent`
+- `tpow_connection_failed_notice`
 - `tpow_hide_attribution`
 - `tpow_mode`
 - `tpow_background`
