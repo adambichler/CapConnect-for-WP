@@ -32,6 +32,49 @@ class Tpow_Settings
 
         // Migrate legacy combined endpoint URL to separate fields
         $this->migrateLegacyEndpoint();
+
+        // Register filters to support locale-specific translations directly within the settings fields
+        $multilingual_options = [
+            'tpow_initial_state_label',
+            'tpow_verifying_label',
+            'tpow_solved_label',
+            'tpow_required_label',
+            'tpow_verified_aria_label',
+            'tpow_verifying_aria_label',
+            'tpow_verify_aria_label',
+            'tpow_error_label',
+            'tpow_error_aria_label',
+            'tpow_wasm_disabled_label',
+            'tpow_troubleshoot_label',
+        ];
+
+        foreach ($multilingual_options as $option) {
+            add_filter("pre_update_option_{$option}", function($new_value) use ($option) {
+                $locale = isset($_POST['tpow_current_edit_locale']) ? sanitize_text_field(wp_unslash($_POST['tpow_current_edit_locale'])) : self::getCurrentLanguage();
+                $translations = get_option("{$option}_translations", []);
+                $translations[$locale] = $new_value;
+                update_option("{$option}_translations", $translations);
+                return $new_value;
+            }, 10, 1);
+
+            add_filter("option_{$option}", function($value) use ($option) {
+                $locale = self::getCurrentLanguage();
+                $translations = get_option("{$option}_translations", []);
+                
+                if (isset($translations[$locale])) {
+                    return $translations[$locale];
+                }
+                
+                // Fallback for single-language sites or legacy saves:
+                // If the translations array is completely empty, but the base option has a value,
+                // we treat the base option as the value for the site's default locale.
+                if (empty($translations) && $value !== '') {
+                    return $value;
+                }
+                
+                return '';
+            }, 10, 1);
+        }
     }
 
     /**
@@ -266,6 +309,72 @@ class Tpow_Settings
             'default'           => true,
         ]);
 
+        register_setting('tpow_settings_group', 'tpow_initial_state_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_verifying_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_solved_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_required_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_verified_aria_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_verifying_aria_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_verify_aria_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_error_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_error_aria_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_wasm_disabled_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_troubleshoot_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
         add_settings_section(
             'tpow_main_section',
             __('Cap Instance', 'capconnect-for-wp'),
@@ -458,6 +567,156 @@ class Tpow_Settings
             'tpow-settings',
             'tpow_styling_section'
         );
+
+        add_settings_section(
+            'tpow_labels_section',
+            __('Widget Labels & Translations', 'capconnect-for-wp'),
+            [$this, 'renderLabelsSectionDescription'],
+            'tpow-settings'
+        );
+
+        add_settings_field(
+            'tpow_initial_state_label',
+            __('Initial Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_initial_state_label',
+                'placeholder' => __("Verify you're human", 'capconnect-for-wp'),
+                'description' => __('The initial text displayed on the widget.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_verifying_label',
+            __('Verifying Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_verifying_label',
+                'placeholder' => __('Verifying...', 'capconnect-for-wp'),
+                'description' => __('Text shown while the verification challenge is running.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_solved_label',
+            __('Solved Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_solved_label',
+                'placeholder' => __("You're a human", 'capconnect-for-wp'),
+                'description' => __('Text shown when verification is completed successfully.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_required_label',
+            __('Required Field Error Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_required_label',
+                'placeholder' => __("Please verify you're human", 'capconnect-for-wp'),
+                'description' => __('HTML5 validation error message shown if form is submitted without solving the widget.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_verified_aria_label',
+            __('Solved Accessibility Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_verified_aria_label',
+                'placeholder' => __("We have verified you're a human, you may now continue", 'capconnect-for-wp'),
+                'description' => __('Accessibility/ARIA screen-reader message read when verification is successfully completed.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_verifying_aria_label',
+            __('Verifying Accessibility Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_verifying_aria_label',
+                'placeholder' => __("Verifying you're a human, please wait", 'capconnect-for-wp'),
+                'description' => __('Accessibility/ARIA screen-reader message read when verification starts.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_verify_aria_label',
+            __('Action Accessibility Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_verify_aria_label',
+                'placeholder' => __("Click to verify you're a human", 'capconnect-for-wp'),
+                'description' => __('Accessibility/ARIA screen-reader description for the click target button.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_error_label',
+            __('Error Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_error_label',
+                'placeholder' => __('Error', 'capconnect-for-wp'),
+                'description' => __('General error text shown in the widget when verification fails.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_error_aria_label',
+            __('Error Accessibility Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_error_aria_label',
+                'placeholder' => __('An error occurred, please try again', 'capconnect-for-wp'),
+                'description' => __('Accessibility/ARIA screen-reader error message read when verification fails.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_wasm_disabled_label',
+            __('WASM Warning Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_wasm_disabled_label',
+                'placeholder' => __('Enable WASM for significantly faster solving', 'capconnect-for-wp'),
+                'description' => __('Warning message shown to users who have WebAssembly disabled in their browser.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_troubleshoot_label',
+            __('Troubleshooting Link Label', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_troubleshoot_label',
+                'placeholder' => __('Troubleshoot', 'capconnect-for-wp'),
+                'description' => __('The text for the troubleshooting guide link displayed when verification fails.', 'capconnect-for-wp'),
+            ]
+        );
     }
 
     /**
@@ -535,10 +794,12 @@ class Tpow_Settings
                 <a href="#connection" class="nav-tab nav-tab-active" data-tab="connection"><?php esc_html_e('Connection', 'capconnect-for-wp'); ?></a>
                 <a href="#forms" class="nav-tab" data-tab="forms"><?php esc_html_e('Forms', 'capconnect-for-wp'); ?></a>
                 <a href="#styling" class="nav-tab" data-tab="styling"><?php esc_html_e('Styling', 'capconnect-for-wp'); ?></a>
+                <a href="#labels" class="nav-tab" data-tab="labels"><?php esc_html_e('Labels', 'capconnect-for-wp'); ?></a>
             </h2>
 
             <form method="post" action="options.php">
                 <?php settings_fields('tpow_settings_group'); ?>
+                <input type="hidden" name="tpow_current_edit_locale" value="<?php echo esc_attr(self::getCurrentLanguage()); ?>" />
 
                 <!-- Connection Tab -->
                 <div id="tpow-tab-connection" class="tpow-tab-content">
@@ -567,6 +828,11 @@ class Tpow_Settings
                             <?php esc_html_e('Reset Style Settings', 'capconnect-for-wp'); ?>
                         </button>
                     </div>
+                </div>
+
+                <!-- Labels Tab -->
+                <div id="tpow-tab-labels" class="tpow-tab-content" style="display: none;">
+                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_labels_section'); ?>
                 </div>
 
                 <div class="tpow-submit-wrapper">
@@ -1003,6 +1269,28 @@ class Tpow_Settings
             'tpow_protect_comments',
             'tpow_protect_woocommerce',
             'tpow_protect_gravityforms',
+            'tpow_initial_state_label',
+            'tpow_initial_state_label_translations',
+            'tpow_verifying_label',
+            'tpow_verifying_label_translations',
+            'tpow_solved_label',
+            'tpow_solved_label_translations',
+            'tpow_required_label',
+            'tpow_required_label_translations',
+            'tpow_verified_aria_label',
+            'tpow_verified_aria_label_translations',
+            'tpow_verifying_aria_label',
+            'tpow_verifying_aria_label_translations',
+            'tpow_verify_aria_label',
+            'tpow_verify_aria_label_translations',
+            'tpow_error_label',
+            'tpow_error_label_translations',
+            'tpow_error_aria_label',
+            'tpow_error_aria_label_translations',
+            'tpow_wasm_disabled_label',
+            'tpow_wasm_disabled_label_translations',
+            'tpow_troubleshoot_label',
+            'tpow_troubleshoot_label_translations',
         ];
 
         foreach ($options_to_delete as $opt) {
@@ -1342,5 +1630,41 @@ class Tpow_Settings
         }
 
         wp_send_json_error(['message' => __('Empty error message.', 'capconnect-for-wp')], 400);
+    }
+
+    public function renderLabelsSectionDescription(): void
+    {
+        echo '<p>' . esc_html__('Customize the text labels shown on the widget. Leave them empty to use the localized defaults based on WordPress language settings.', 'capconnect-for-wp') . '</p>';
+    }
+
+    public function renderLabelField(array $args): void
+    {
+        $field       = $args['field'];
+        $placeholder = $args['placeholder'];
+        $description = $args['description'];
+        $value       = (string) get_option($field, '');
+
+        echo '<input type="text" name="' . esc_attr($field) . '" value="' . esc_attr($value) . '" placeholder="' . esc_attr($placeholder) . '" class="regular-text" />';
+        echo '<p class="description">' . esc_html($description) . '</p>';
+    }
+
+    public static function getCurrentLanguage(): string
+    {
+        // 1. Check WPML
+        $wpml_lang = apply_filters('wpml_current_language', null);
+        if ($wpml_lang !== null && is_string($wpml_lang)) {
+            return $wpml_lang;
+        }
+
+        // 2. Check Polylang
+        if (function_exists('pll_current_language')) {
+            $pll_lang = pll_current_language();
+            if ($pll_lang) {
+                return $pll_lang;
+            }
+        }
+
+        // 3. Fallback to standard WordPress locale
+        return get_locale();
     }
 }

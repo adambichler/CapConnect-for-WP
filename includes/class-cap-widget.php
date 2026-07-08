@@ -149,18 +149,30 @@ JS;
             $attrs .= ' data-cap-csp-nonce="' . esc_attr($nonce) . '"';
         }
 
+        $initial_state  = (string) get_option('tpow_initial_state_label', '');
+        $verifying      = (string) get_option('tpow_verifying_label', '');
+        $solved         = (string) get_option('tpow_solved_label', '');
+        $required       = (string) get_option('tpow_required_label', '');
+        $verified_aria  = (string) get_option('tpow_verified_aria_label', '');
+        $verifying_aria = (string) get_option('tpow_verifying_aria_label', '');
+        $verify_aria    = (string) get_option('tpow_verify_aria_label', '');
+        $error          = (string) get_option('tpow_error_label', '');
+        $error_aria     = (string) get_option('tpow_error_aria_label', '');
+        $wasm_disabled  = (string) get_option('tpow_wasm_disabled_label', '');
+        $troubleshoot   = (string) get_option('tpow_troubleshoot_label', '');
+
         $i18n = [
-            'initial-state'        => __("Verify you're human", 'capconnect-for-wp'),
-            'required-label'       => __("Please verify you're human", 'capconnect-for-wp'),
-            'verifying-label'      => __('Verifying...', 'capconnect-for-wp'),
-            'verifying-aria-label' => __("Verifying you're a human, please wait", 'capconnect-for-wp'),
-            'verified-aria-label'  => __("We have verified you're a human, you may now continue", 'capconnect-for-wp'),
-            'error-label'          => __('Error', 'capconnect-for-wp'),
-            'error-aria-label'     => __('An error occurred, please try again', 'capconnect-for-wp'),
-            'wasm-disabled'        => __('Enable WASM for significantly faster solving', 'capconnect-for-wp'),
-            'verify-aria-label'    => __("Click to verify you're a human", 'capconnect-for-wp'),
-            'troubleshooting-label' => __('Troubleshoot', 'capconnect-for-wp'),
-            'solved-label'         => __("You're a human", 'capconnect-for-wp'),
+            'initial-state'        => $initial_state !== '' ? $initial_state : __("Verify you're human", 'capconnect-for-wp'),
+            'required-label'       => $required !== '' ? $required : __("Please verify you're human", 'capconnect-for-wp'),
+            'verifying-label'      => $verifying !== '' ? $verifying : __('Verifying...', 'capconnect-for-wp'),
+            'verifying-aria-label' => $verifying_aria !== '' ? $verifying_aria : __("Verifying you're a human, please wait", 'capconnect-for-wp'),
+            'verified-aria-label'  => $verified_aria !== '' ? $verified_aria : __("We have verified you're a human, you may now continue", 'capconnect-for-wp'),
+            'error-label'          => $error !== '' ? $error : __('Error', 'capconnect-for-wp'),
+            'error-aria-label'     => $error_aria !== '' ? $error_aria : __('An error occurred, please try again', 'capconnect-for-wp'),
+            'wasm-disabled'        => $wasm_disabled !== '' ? $wasm_disabled : __('Enable WASM for significantly faster solving', 'capconnect-for-wp'),
+            'verify-aria-label'    => $verify_aria !== '' ? $verify_aria : __("Click to verify you're a human", 'capconnect-for-wp'),
+            'troubleshooting-label' => $troubleshoot !== '' ? $troubleshoot : __('Troubleshoot', 'capconnect-for-wp'),
+            'solved-label'         => $solved !== '' ? $solved : __("You're a human", 'capconnect-for-wp'),
         ];
 
         foreach ($i18n as $key => $text) {
