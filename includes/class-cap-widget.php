@@ -198,6 +198,10 @@ JS;
 
     public function renderShortcode(array $atts): string
     {
+        if (! Tpow_Settings::isConfigured()) {
+            return '';
+        }
+
         $atts = shortcode_atts(['nonce' => null], $atts, 'tpow_widget');
 
         $this->enqueueAssets();
@@ -222,6 +226,10 @@ JS;
      */
     public function renderProgrammaticShortcode(array $atts): string
     {
+        if (! Tpow_Settings::isConfigured()) {
+            return '';
+        }
+
         $atts = shortcode_atts(['field' => 'cap-token', 'id' => 'tpow-token'], $atts, 'tpow_programmatic');
 
         $this->enqueueAssets();

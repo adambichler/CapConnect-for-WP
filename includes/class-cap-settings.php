@@ -19,6 +19,7 @@ class Tpow_Settings
         add_action('admin_init', [$this, 'handleResetStyleSettings']);
         add_action('tpow_hourly_connection_check', [$this, 'runHourlyCheck']);
         add_action('admin_notices', [$this, 'displayConnectionFailedNotice']);
+        add_action('admin_notices', [$this, 'displayCredentialsMissingNotice']);
 
         // Reset alert status and verify connection when credentials or alert settings change
         add_action('update_option_tpow_instance_url', [$this, 'handleCredentialUpdate']);
@@ -101,6 +102,17 @@ class Tpow_Settings
             return rtrim($instance, '/') . '/' . ltrim($site_key, '/');
         }
         return '';
+    }
+
+    /**
+     * Checks if all required credentials (Instance URL, Site Key, Secret Key) are configured.
+     */
+    public static function isConfigured(): bool
+    {
+        $instance = trim((string) get_option('tpow_instance_url', ''));
+        $site_key = trim((string) get_option('tpow_site_key', ''));
+        $secret   = trim((string) get_option('tpow_secret', ''));
+        return $instance !== '' && $site_key !== '' && $secret !== '';
     }
 
     /**
@@ -1609,9 +1621,43 @@ class Tpow_Settings
         }
     }
 
+    /**
+     * Displays a warning notice in the WordPress admin area if the plugin credentials are not configured.
+     */
+    public function displayCredentialsMissingNotice(): void
+    {
+        if (! current_user_can('manage_options')) {
+            return;
+        }
+
+        if (self::isConfigured()) {
+            return;
+        }
+
+        $settings_url = admin_url('options-general.php?page=tpow-settings');
+        ?>
+        <div class="notice notice-warning">
+            <p>
+                <strong><?php esc_html_e('CapConnect for WP:', 'capconnect-for-wp'); ?></strong>
+                <?php
+                echo sprintf(
+                    /* translators: 1: settings link HTML */
+                    esc_html__('Please configure the Instance URL, Site Key, and Secret Key in the %1$s to enable captcha protection.', 'capconnect-for-wp'),
+                    '<a href="' . esc_url($settings_url) . '">' . esc_html__('settings', 'capconnect-for-wp') . '</a>'
+                );
+                ?>
+            </p>
+        </div>
+        <?php
+    }
+
     public function displayConnectionFailedNotice(): void
     {
         if (! current_user_can('manage_options')) {
+            return;
+        }
+
+        if (! self::isConfigured()) {
             return;
         }
 

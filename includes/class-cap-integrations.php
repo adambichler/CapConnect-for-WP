@@ -19,6 +19,10 @@ class Tpow_Integrations
 
     public function init(): void
     {
+        if (! Tpow_Settings::isConfigured()) {
+            return;
+        }
+
         $this->initCommentIntegration();
         $this->initLoginIntegration();
         $this->initRegisterIntegration();

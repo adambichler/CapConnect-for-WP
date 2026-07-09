@@ -521,3 +521,13 @@ msgstr "Message d'erreur vide."
 #: includes/class-cap-settings.php:1637
 msgid "Customize the text labels shown on the widget. Leave them empty to use the localized defaults based on WordPress language settings."
 msgstr "Personnalisez les libellés de texte affichés sur le widget. Laissez-les vides pour utiliser les valeurs par défaut localisées selon les réglages de langue de WordPress."
+
+#: includes/class-cap-settings.php:1641
+msgid "CapConnect for WP:"
+msgstr "CapConnect pour WP :"
+
+#: includes/class-cap-settings.php:1645
+#, php-format
+msgid "Please configure the Instance URL, Site Key, and Secret Key in the %1$s to enable captcha protection."
+msgstr "Veuillez configurer l'URL de l'instance, la clé du site et la clé secrète dans les %1$s pour activer la protection par captcha."
+
