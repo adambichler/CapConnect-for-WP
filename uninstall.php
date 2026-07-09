@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fired when the plugin is uninstalled.
  * Removes all plugin options from the database.
@@ -41,3 +42,6 @@ delete_option('tpow_protect_lostpassword');
 delete_option('tpow_protect_comments');
 delete_option('tpow_protect_woocommerce');
 delete_option('tpow_protect_gravityforms');
+delete_option('tpow_protect_forminator');
+delete_option('tpow_verification_failed_label');
+delete_option('tpow_verification_failed_label_translations');

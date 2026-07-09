@@ -53,7 +53,11 @@ require_once TPOW_PLUGIN_DIR . 'includes/class-cap-integrations.php';
 
 (new Tpow_Settings())->init();
 (new Tpow_Widget())->init();
-(new Tpow_Integrations())->init();
+
+add_action('plugins_loaded', function(): void {
+    (new Tpow_Integrations())->init();
+});
+
 
 register_activation_hook(__FILE__, 'tpow_activate_plugin');
 register_deactivation_hook(__FILE__, 'tpow_deactivate_plugin');

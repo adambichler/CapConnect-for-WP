@@ -25,6 +25,7 @@ class Tpow_Integrations
         $this->initLostPasswordIntegration();
         $this->initWooCommerceIntegration();
         $this->initGravityFormsIntegration();
+        $this->initForminatorIntegration();
     }
 
     private function initCommentIntegration(): void
@@ -94,6 +95,20 @@ class Tpow_Integrations
         add_filter('gform_validation', [$this, 'validateGravityFormsToken']);
     }
 
+    private function initForminatorIntegration(): void
+    {
+        if (! get_option('tpow_protect_forminator', true)) {
+            return;
+        }
+
+        if (! $this->isForminatorActive()) {
+            return;
+        }
+
+        add_filter('forminator_render_button_markup', [$this, 'renderWidgetForminator'], 10, 2);
+        add_filter('forminator_custom_form_submit_errors', [$this, 'validateForminatorToken'], 10, 3);
+    }
+
     public function renderWidgetComment(): void
     {
         $this->widget->enqueueAssets();
@@ -160,7 +175,7 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             wp_die(
-                esc_html__('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp'),
+                esc_html($this->getVerificationFailedMessage()),
                 esc_html__('Cap Verification Failed', 'capconnect-for-wp'),
                 ['response' => 403, 'back_link' => true]
             );
@@ -180,7 +195,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             return new \WP_Error(
                 'tpow_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+                $this->getVerificationFailedMessage()
             );
         }
 
@@ -194,7 +209,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             $errors->add(
                 'tpow_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+                $this->getVerificationFailedMessage()
             );
         }
 
@@ -208,7 +223,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             $errors->add(
                 'tpow_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+                $this->getVerificationFailedMessage()
             );
         }
     }
@@ -224,7 +239,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             $errors->add(
                 'tpow_verification_failed',
-                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+                $this->getVerificationFailedMessage()
             );
         }
     }
@@ -235,7 +250,7 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             wc_add_notice(
-                __('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp'),
+                $this->getVerificationFailedMessage(),
                 'error'
             );
         }
@@ -264,12 +279,39 @@ class Tpow_Integrations
             add_filter(
                 "gform_validation_message_{$formId}",
                 fn(string $message): string => '<div class="validation_error">'
-                    . esc_html__('Cap verification failed. Please complete the challenge and try again.', 'capconnect-for-wp')
+                    . esc_html($this->getVerificationFailedMessage())
                     . '</div>'
             );
         }
 
         return $validationResult;
+    }
+
+    public function renderWidgetForminator(string $html, $button): string
+    {
+        if (strpos($html, 'forminator-button-submit') === false) {
+            return $html;
+        }
+
+        $this->widget->enqueueAssets();
+
+        $widgetHtml = $this->widget->renderForMode();
+        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+            $widgetHtml = '<div class="forminator-row cap-widget-row"><div class="forminator-col forminator-col-12"><div class="forminator-field"><div class="cap-widget-wrapper">' . $widgetHtml . '</div></div></div></div>';
+        }
+
+        return $widgetHtml . $html;
+    }
+
+    public function validateForminatorToken(array $submit_errors, $form_id, array $field_data_array): array
+    {
+        $token = $this->getToken();
+
+        if (! $this->verifier->verify($token)) {
+            $submit_errors[][ 'cap-token' ] = esc_html($this->getVerificationFailedMessage());
+        }
+
+        return $submit_errors;
     }
 
     private function getToken(): string
@@ -286,5 +328,16 @@ class Tpow_Integrations
     private function isGravityFormsActive(): bool
     {
         return class_exists('GFForms');
+    }
+
+    private function isForminatorActive(): bool
+    {
+        return class_exists('Forminator');
+    }
+
+    private function getVerificationFailedMessage(): string
+    {
+        $message = (string) get_option('tpow_verification_failed_label', '');
+        return $message !== '' ? $message : __('Captcha verification failed', 'capconnect-for-wp');
     }
 }

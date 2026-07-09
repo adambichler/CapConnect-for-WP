@@ -206,6 +206,8 @@ Uninstalling via the WordPress interface automatically deletes all saved options
 - `tpow_protect_comments`
 - `tpow_protect_woocommerce`
 - `tpow_protect_gravityforms`
+- `tpow_protect_forminator`
+
 
 ---
 

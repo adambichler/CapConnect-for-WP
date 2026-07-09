@@ -19,15 +19,15 @@ msgstr ""
 msgid "Server responded with HTTP status code %d"
 msgstr "Server antwortete mit HTTP-Statuscode %d"
 
-#: includes/class-cap-integrations.php:163
-#: includes/class-cap-integrations.php:183
-#: includes/class-cap-integrations.php:197
-#: includes/class-cap-integrations.php:211
-#: includes/class-cap-integrations.php:227
-#: includes/class-cap-integrations.php:238
-#: includes/class-cap-integrations.php:267
-msgid "Cap verification failed. Please complete the challenge and try again."
-msgstr "Cap-Verifizierung fehlgeschlagen. Bitte schließen Sie die Herausforderung ab und versuchen Sie es erneut."
+msgid "Captcha verification failed"
+msgstr "Captcha-Verifizierung fehlgeschlagen"
+
+msgid "Verification Failed Error Message"
+msgstr "Fehlermeldung bei fehlgeschlagener Verifizierung"
+
+msgid "Error message displayed on submission when captcha verification fails."
+msgstr "Fehlermeldung, die beim Absenden angezeigt wird, wenn die Captcha-Verifizierung fehlschlägt."
+
 
 #: includes/class-cap-integrations.php:164
 msgid "Cap Verification Failed"

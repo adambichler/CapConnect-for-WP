@@ -46,6 +46,7 @@ class Tpow_Settings
             'tpow_error_aria_label',
             'tpow_wasm_disabled_label',
             'tpow_troubleshoot_label',
+            'tpow_verification_failed_label',
         ];
 
         foreach ($multilingual_options as $option) {
@@ -179,7 +180,7 @@ class Tpow_Settings
 
         register_setting('tpow_settings_group', 'tpow_fail_open', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => false,
         ]);
 
@@ -191,7 +192,7 @@ class Tpow_Settings
 
         register_setting('tpow_settings_group', 'tpow_hide_attribution', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => false,
         ]);
 
@@ -275,37 +276,43 @@ class Tpow_Settings
 
         register_setting('tpow_settings_group', 'tpow_protect_login', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
         register_setting('tpow_settings_group', 'tpow_protect_register', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
         register_setting('tpow_settings_group', 'tpow_protect_lostpassword', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
         register_setting('tpow_settings_group', 'tpow_protect_comments', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
         register_setting('tpow_settings_group', 'tpow_protect_woocommerce', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
         register_setting('tpow_settings_group', 'tpow_protect_gravityforms', [
             'type'              => 'boolean',
-            'sanitize_callback' => 'boolval',
+            'sanitize_callback' => 'wp_validate_boolean',
+            'default'           => true,
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_protect_forminator', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
@@ -352,6 +359,12 @@ class Tpow_Settings
         ]);
 
         register_setting('tpow_settings_group', 'tpow_error_label', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_verification_failed_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
@@ -520,6 +533,18 @@ class Tpow_Settings
             ]
         );
 
+        add_settings_field(
+            'tpow_protect_forminator',
+            __('Forminator Forms', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'],
+            'tpow-settings',
+            'tpow_forms_section',
+            [
+                'field' => 'tpow_protect_forminator',
+                'label' => __('Protect Forminator Forms submissions', 'capconnect-for-wp'),
+            ]
+        );
+
         add_settings_section(
             'tpow_styling_section',
             __('Custom Styling', 'capconnect-for-wp'),
@@ -676,6 +701,19 @@ class Tpow_Settings
                 'field'       => 'tpow_error_label',
                 'placeholder' => __('Error', 'capconnect-for-wp'),
                 'description' => __('General error text shown in the widget when verification fails.', 'capconnect-for-wp'),
+            ]
+        );
+
+        add_settings_field(
+            'tpow_verification_failed_label',
+            __('Verification Failed Error Message', 'capconnect-for-wp'),
+            [$this, 'renderLabelField'],
+            'tpow-settings',
+            'tpow_labels_section',
+            [
+                'field'       => 'tpow_verification_failed_label',
+                'placeholder' => __('Captcha verification failed', 'capconnect-for-wp'),
+                'description' => __('Error message displayed on submission when captcha verification fails.', 'capconnect-for-wp'),
             ]
         );
 
@@ -1058,6 +1096,8 @@ class Tpow_Settings
             $disabled = true;
         } elseif ($field === 'tpow_protect_gravityforms' && ! class_exists('GFForms')) {
             $disabled = true;
+        } elseif ($field === 'tpow_protect_forminator' && ! class_exists('Forminator')) {
+            $disabled = true;
         }
 
         if ($disabled) {
@@ -1269,6 +1309,7 @@ class Tpow_Settings
             'tpow_protect_comments',
             'tpow_protect_woocommerce',
             'tpow_protect_gravityforms',
+            'tpow_protect_forminator',
             'tpow_initial_state_label',
             'tpow_initial_state_label_translations',
             'tpow_verifying_label',
@@ -1285,6 +1326,8 @@ class Tpow_Settings
             'tpow_verify_aria_label_translations',
             'tpow_error_label',
             'tpow_error_label_translations',
+            'tpow_verification_failed_label',
+            'tpow_verification_failed_label_translations',
             'tpow_error_aria_label',
             'tpow_error_aria_label_translations',
             'tpow_wasm_disabled_label',
