@@ -145,6 +145,10 @@ msgstr "Kontrollkästchen-Designs"
 msgid "Spinner Styles"
 msgstr "Ladekreis-Designs"
 
+#: includes/class-cap-settings.php:619
+msgid "Error Message Styles"
+msgstr "Fehlermeldungs-Designs"
+
 #: includes/class-cap-settings.php:565
 msgid "Hide Attribution Link"
 msgstr "Attribuierungslink ausblenden"
@@ -530,4 +534,3 @@ msgstr "CapConnect für WP:"
 #, php-format
 msgid "Please configure the Instance URL, Site Key, and Secret Key in the %1$s to enable captcha protection."
 msgstr "Bitte konfigurieren Sie die Instanz-URL, den Website-Schlüssel und den Geheimschlüssel in den %1$s, um den Captcha-Schutz zu aktivieren."
-

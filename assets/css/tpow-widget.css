@@ -62,3 +62,15 @@ cap-widget {
   margin-bottom: 16px !important;
   clear: both !important;
 }
+
+.tpow-error-message {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}

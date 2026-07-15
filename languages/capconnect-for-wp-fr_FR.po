@@ -145,6 +145,10 @@ msgstr "Styles de la case à cocher"
 msgid "Spinner Styles"
 msgstr "Styles du spinner"
 
+#: includes/class-cap-settings.php:619
+msgid "Error Message Styles"
+msgstr "Styles des messages d'erreur"
+
 #: includes/class-cap-settings.php:565
 msgid "Hide Attribution Link"
 msgstr "Masquer le lien d'attribution"
@@ -530,4 +534,3 @@ msgstr "CapConnect pour WP :"
 #, php-format
 msgid "Please configure the Instance URL, Site Key, and Secret Key in the %1$s to enable captcha protection."
 msgstr "Veuillez configurer l'URL de l'instance, la clé du site et la clé secrète dans les %1$s pour activer la protection par captcha."
-

@@ -108,11 +108,11 @@ class Tpow_Widget
             wp_add_inline_style('tpow-widget', $css);
         }
 
-        $error_background = get_option('tpow_background', '') ?: '#ffffff';
-        $error_color      = get_option('tpow_color', '') ?: '#374151';
-        $error_border     = get_option('tpow_border_color', '') ?: '#d8d9da';
+        $error_background = get_option('tpow_error_background', '#fef2f2') ?: '#fef2f2';
+        $error_color      = get_option('tpow_error_color', '#b91c1c') ?: '#b91c1c';
+        $error_border     = get_option('tpow_error_border_color', '#ef4444') ?: '#ef4444';
         $error_css        = sprintf(
-            '.tpow-error-message { background-color: %1$s; color: %2$s; border-color: %3$s; border-radius: %4$dpx; }',
+            '.tpow-error-message { background-color: %1$s; color: %2$s; border: 1px solid %3$s; border-radius: %4$dpx; }',
             $error_background,
             $error_color,
             $error_border,

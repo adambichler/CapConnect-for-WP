@@ -286,6 +286,24 @@ class Tpow_Settings
             'default'           => '#374151',
         ]);
 
+        register_setting('tpow_settings_group', 'tpow_error_background', [
+            'type'              => 'string',
+            'sanitize_callback' => [$this, 'sanitizeHexColor'],
+            'default'           => '#fef2f2',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_error_color', [
+            'type'              => 'string',
+            'sanitize_callback' => [$this, 'sanitizeHexColor'],
+            'default'           => '#b91c1c',
+        ]);
+
+        register_setting('tpow_settings_group', 'tpow_error_border_color', [
+            'type'              => 'string',
+            'sanitize_callback' => [$this, 'sanitizeHexColor'],
+            'default'           => '#ef4444',
+        ]);
+
         register_setting('tpow_settings_group', 'tpow_protect_login', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
@@ -590,6 +608,17 @@ class Tpow_Settings
             'tpow_spinner_styles',
             __('Spinner Styles', 'capconnect-for-wp'),
             [$this, 'renderSpinnerStylesField'],
+            'tpow-settings',
+            'tpow_styling_section',
+            [
+                'class' => 'tpow-styling-field',
+            ]
+        );
+
+        add_settings_field(
+            'tpow_error_styles',
+            __('Error Message Styles', 'capconnect-for-wp'),
+            [$this, 'renderErrorStylesField'],
             'tpow-settings',
             'tpow_styling_section',
             [
@@ -980,34 +1009,6 @@ class Tpow_Settings
                     initialTab = storedTab;
                 }
 
-                // Dynamic styling tab visibility based on Verification Mode
-                var $modeSelect = $('select[name="tpow_mode"]');
-                function toggleStylingTab() {
-                    var isWidget = $modeSelect.val() === 'widget';
-                    var $stylingTab = $('.tpow-nav-tab-wrapper .nav-tab[data-tab="styling"]');
-                    
-                    if (isWidget) {
-                        $stylingTab.show();
-                    } else {
-                        $stylingTab.hide();
-                        // If current active tab is styling but styling is hidden, fall back to connection tab
-                        var activeTab = $('.tpow-nav-tab-wrapper .nav-tab-active').data('tab');
-                        if (activeTab === 'styling') {
-                            switchTab('connection');
-                        }
-                    }
-                }
-
-                $modeSelect.on('change', toggleStylingTab);
-                
-                // Initialize styling tab visibility first, then switch to initial tab
-                toggleStylingTab();
-                
-                // If initialTab is 'styling' but it's not a widget mode, force it to 'connection'
-                if (initialTab === 'styling' && $modeSelect.val() !== 'widget') {
-                    initialTab = 'connection';
-                }
-                
                 switchTab(initialTab);
 
                 // Reset confirmation
@@ -1238,6 +1239,32 @@ class Tpow_Settings
         <?php
     }
 
+    /**
+     * Renders the color settings for programmatic verification errors.
+     */
+    public function renderErrorStylesField(): void
+    {
+        $background = get_option('tpow_error_background', '#fef2f2');
+        $color = get_option('tpow_error_color', '#b91c1c');
+        $border = get_option('tpow_error_border_color', '#ef4444');
+        ?>
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div>
+                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Background Color', 'capconnect-for-wp'); ?></label>
+                <input type="text" name="tpow_error_background" value="<?php echo esc_attr($background); ?>" class="tpow-color-picker" data-default-color="#fef2f2" />
+            </div>
+            <div>
+                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Text Color', 'capconnect-for-wp'); ?></label>
+                <input type="text" name="tpow_error_color" value="<?php echo esc_attr($color); ?>" class="tpow-color-picker" data-default-color="#b91c1c" />
+            </div>
+            <div>
+                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Color', 'capconnect-for-wp'); ?></label>
+                <input type="text" name="tpow_error_border_color" value="<?php echo esc_attr($border); ?>" class="tpow-color-picker" data-default-color="#ef4444" />
+            </div>
+        </div>
+        <?php
+    }
+
     public function sanitizeHexColor($value): string
     {
         if (empty($value)) {
@@ -1315,6 +1342,9 @@ class Tpow_Settings
             'tpow_checkbox_border_radius',
             'tpow_spinner_color',
             'tpow_spinner_background',
+            'tpow_error_background',
+            'tpow_error_color',
+            'tpow_error_border_color',
             'tpow_protect_login',
             'tpow_protect_register',
             'tpow_protect_lostpassword',
@@ -1381,6 +1411,9 @@ class Tpow_Settings
             'tpow_checkbox_border_radius',
             'tpow_spinner_color',
             'tpow_spinner_background',
+            'tpow_error_background',
+            'tpow_error_color',
+            'tpow_error_border_color',
             'tpow_hide_attribution',
         ];
 

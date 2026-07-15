@@ -147,6 +147,10 @@ msgstr ""
 msgid "Spinner Styles"
 msgstr ""
 
+#: includes/class-cap-settings.php:619
+msgid "Error Message Styles"
+msgstr ""
+
 #: includes/class-cap-settings.php:565
 msgid "Hide Attribution Link"
 msgstr ""
@@ -529,4 +533,3 @@ msgstr ""
 #, php-format
 msgid "Please configure the Instance URL, Site Key, and Secret Key in the %1$s to enable captcha protection."
 msgstr ""
-
