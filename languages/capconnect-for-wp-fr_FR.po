@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CapConnect for WP 1.3.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-08 18:00+0200\n"
+"POT-Creation-Date: 2026-07-16 13:59+0200\n"
 "PO-Revision-Date: 2026-07-08 18:00+0200\n"
 "Last-Translator: Adam Bichler\n"
 "Language-Team: French\n"
@@ -14,7 +14,8 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Domain: capconnect-for-wp\n"
 
-#: includes/class-cap-verifier.php:32
+#. translators: 1: HTTP status code
+#: includes/class-cap-verifier.php:32 includes/class-cap-verifier.php:41
 #, php-format
 msgid "Server responded with HTTP status code %d"
 msgstr "Le serveur a répondu avec le code de statut HTTP %d"
@@ -27,518 +28,760 @@ msgstr "Le serveur Cap a renvoyé un JSON invalide."
 msgid "Cap server returned an unexpected response."
 msgstr "Le serveur Cap a renvoyé une réponse inattendue."
 
-msgid "Captcha verification failed"
-msgstr "La vérification du Captcha a échoué"
-
-msgid "Verification Failed Error Message"
-msgstr "Message d'erreur de vérification échouée"
-
-msgid "Error message displayed on submission when captcha verification fails."
-msgstr "Message d'erreur affiché lors de la soumission lorsque la vérification du captcha échoue."
-
-
-#: includes/class-cap-integrations.php:164
-msgid "Cap Verification Failed"
-msgstr "Vérification Cap échouée"
-
-#: includes/class-cap-settings.php:86
+#: includes/class-cap-settings.php:94
 msgid "Settings"
 msgstr "Réglages"
 
-#: includes/class-cap-settings.php:144
+#: includes/class-cap-settings.php:163
 msgid "CapConnect for WP — Settings"
 msgstr "CapConnect for WP — Réglages"
 
-#: includes/class-cap-settings.php:145
+#: includes/class-cap-settings.php:164
 msgid "CapConnect"
 msgstr "CapConnect"
 
-#: includes/class-cap-settings.php:380
+#: includes/class-cap-settings.php:429
 msgid "Cap Instance"
 msgstr "Instance Cap"
 
-#: includes/class-cap-settings.php:387
+#: includes/class-cap-settings.php:436
 msgid "Verification Mode"
 msgstr "Mode de vérification"
 
-#: includes/class-cap-settings.php:395
+#: includes/class-cap-settings.php:444
 msgid "Instance URL"
 msgstr "URL de l'instance"
 
-#: includes/class-cap-settings.php:403
+#: includes/class-cap-settings.php:452
 msgid "Site Key"
 msgstr "Site Key"
 
-#: includes/class-cap-settings.php:411
+#: includes/class-cap-settings.php:460
 msgid "Secret Key"
 msgstr "Clé secrète"
 
-#: includes/class-cap-settings.php:420
+#: includes/class-cap-settings.php:469
 msgid "Timeout (seconds)"
 msgstr "Délai (secondes)"
 
-#: includes/class-cap-settings.php:428
+#: includes/class-cap-settings.php:477
 msgid "Fail Open"
 msgstr "Fail Open"
 
-#: includes/class-cap-settings.php:436
+#: includes/class-cap-settings.php:485
 msgid "Alert Email"
 msgstr "E-mail d'alerte"
 
-#: includes/class-cap-settings.php:446
+#: includes/class-cap-settings.php:495
 msgid "Form Protection"
 msgstr "Protection des formulaires"
 
-#: includes/class-cap-settings.php:453
+#: includes/class-cap-settings.php:502
 msgid "Login Form"
 msgstr "Formulaire de connexion"
 
-#: includes/class-cap-settings.php:459
+#: includes/class-cap-settings.php:508
 msgid "Protect the login form"
 msgstr "Protéger le formulaire de connexion"
 
-#: includes/class-cap-settings.php:465
+#: includes/class-cap-settings.php:514
 msgid "Registration Form"
 msgstr "Formulaire d'inscription"
 
-#: includes/class-cap-settings.php:471
+#: includes/class-cap-settings.php:520
 msgid "Protect the registration form"
 msgstr "Protéger le formulaire d'inscription"
 
-#: includes/class-cap-settings.php:477
+#: includes/class-cap-settings.php:526
 msgid "Lost Password Form"
 msgstr "Formulaire mot de passe oublié"
 
-#: includes/class-cap-settings.php:483
+#: includes/class-cap-settings.php:532
 msgid "Protect the lost password and password reset forms"
-msgstr "Protéger les formulaires de perte de mot de passe et de réinitialisation"
+msgstr ""
+"Protéger les formulaires de perte de mot de passe et de réinitialisation"
 
-#: includes/class-cap-settings.php:489
+#: includes/class-cap-settings.php:538
 msgid "Comments Form"
 msgstr "Formulaire de commentaires"
 
-#: includes/class-cap-settings.php:495
+#: includes/class-cap-settings.php:544
 msgid "Protect the comments form"
 msgstr "Protéger le formulaire de commentaires"
 
-#: includes/class-cap-settings.php:501
+#: includes/class-cap-settings.php:550
 msgid "WooCommerce Checkout"
 msgstr "Validation de commande WooCommerce"
 
-#: includes/class-cap-settings.php:507
+#: includes/class-cap-settings.php:556
 msgid "Protect the WooCommerce checkout form"
 msgstr "Protéger le formulaire de validation de commande WooCommerce"
 
-#: includes/class-cap-settings.php:513
+#: includes/class-cap-settings.php:562
 msgid "Gravity Forms"
 msgstr "Gravity Forms"
 
-#: includes/class-cap-settings.php:519
+#: includes/class-cap-settings.php:568
 msgid "Protect Gravity Forms submissions"
 msgstr "Protéger les soumissions Gravity Forms"
 
-#: includes/class-cap-settings.php:525
+#: includes/class-cap-settings.php:574
+msgid "Forminator Forms"
+msgstr "Formulaires Forminator"
+
+#: includes/class-cap-settings.php:580
+msgid "Protect Forminator Forms submissions"
+msgstr "Protéger les envois des formulaires Forminator"
+
+#: includes/class-cap-settings.php:586
 msgid "Custom Styling"
 msgstr "Style personnalisé"
 
-#: includes/class-cap-settings.php:532
+#: includes/class-cap-settings.php:593
 msgid "Widget Container Styles"
 msgstr "Styles du conteneur du widget"
 
-#: includes/class-cap-settings.php:543
+#: includes/class-cap-settings.php:604
 msgid "Checkbox Styles"
 msgstr "Styles de la case à cocher"
 
-#: includes/class-cap-settings.php:554
+#: includes/class-cap-settings.php:615
 msgid "Spinner Styles"
 msgstr "Styles du spinner"
 
-#: includes/class-cap-settings.php:619
+#: includes/class-cap-settings.php:626
 msgid "Error Message Styles"
 msgstr "Styles des messages d'erreur"
 
-#: includes/class-cap-settings.php:565
+#: includes/class-cap-settings.php:637
 msgid "Hide Attribution Link"
 msgstr "Masquer le lien d'attribution"
 
-#: includes/class-cap-settings.php:573
+#: includes/class-cap-settings.php:645
 msgid "Widget Labels & Translations"
 msgstr "Libellés et traductions du widget"
 
-#: includes/class-cap-settings.php:580
+#: includes/class-cap-settings.php:652
 msgid "Initial Label"
 msgstr "Libellé initial"
 
-#: includes/class-cap-settings.php:586
-#: includes/class-cap-widget.php:165
+#: includes/class-cap-settings.php:658 includes/class-cap-widget.php:303
 msgid "Verify you're human"
 msgstr "Prouvez que vous êtes humain"
 
-#: includes/class-cap-settings.php:587
+#: includes/class-cap-settings.php:659
 msgid "The initial text displayed on the widget."
 msgstr "Le texte initial affiché sur le widget."
 
-#: includes/class-cap-settings.php:593
+#: includes/class-cap-settings.php:665
 msgid "Verifying Label"
 msgstr "Libellé de vérification"
 
-#: includes/class-cap-settings.php:599
-#: includes/class-cap-widget.php:167
+#: includes/class-cap-settings.php:671 includes/class-cap-widget.php:305
 msgid "Verifying..."
 msgstr "Vérification…"
 
-#: includes/class-cap-settings.php:600
+#: includes/class-cap-settings.php:672
 msgid "Text shown while the verification challenge is running."
 msgstr "Texte affiché pendant l'exécution du défi de vérification."
 
-#: includes/class-cap-settings.php:606
+#: includes/class-cap-settings.php:678
 msgid "Solved Label"
 msgstr "Libellé résolu"
 
-#: includes/class-cap-settings.php:612
-#: includes/class-cap-widget.php:175
+#: includes/class-cap-settings.php:684 includes/class-cap-widget.php:313
 msgid "You're a human"
 msgstr "Vous êtes humain"
 
-#: includes/class-cap-settings.php:613
+#: includes/class-cap-settings.php:685
 msgid "Text shown when verification is completed successfully."
 msgstr "Texte affiché lorsque la vérification est réussie."
 
-#: includes/class-cap-settings.php:619
+#: includes/class-cap-settings.php:691
 msgid "Required Field Error Label"
 msgstr "Libellé d'erreur de champ requis"
 
-#: includes/class-cap-settings.php:625
-#: includes/class-cap-widget.php:166
+#: includes/class-cap-settings.php:697 includes/class-cap-widget.php:304
 msgid "Please verify you're human"
 msgstr "Veuillez prouver que vous êtes humain"
 
-#: includes/class-cap-settings.php:626
-msgid "HTML5 validation error message shown if form is submitted without solving the widget."
-msgstr "Message d'erreur de validation HTML5 affiché si le formulaire est soumis sans résoudre le widget."
+#: includes/class-cap-settings.php:698
+msgid ""
+"HTML5 validation error message shown if form is submitted without solving "
+"the widget."
+msgstr ""
+"Message d'erreur de validation HTML5 affiché si le formulaire est soumis "
+"sans résoudre le widget."
 
-#: includes/class-cap-settings.php:632
+#: includes/class-cap-settings.php:704
 msgid "Solved Accessibility Label"
 msgstr "Libellé d'accessibilité résolu"
 
-#: includes/class-cap-settings.php:638
-#: includes/class-cap-widget.php:169
+#: includes/class-cap-settings.php:710 includes/class-cap-widget.php:307
 msgid "We have verified you're a human, you may now continue"
 msgstr "Vous avez été vérifié, vous pouvez continuer"
 
-#: includes/class-cap-settings.php:639
-msgid "Accessibility/ARIA screen-reader message read when verification is successfully completed."
-msgstr "Message d'accessibilité/lecteur d'écran ARIA lu lorsque la vérification est réussie."
+#: includes/class-cap-settings.php:711
+msgid ""
+"Accessibility/ARIA screen-reader message read when verification is "
+"successfully completed."
+msgstr ""
+"Message d'accessibilité/lecteur d'écran ARIA lu lorsque la vérification est "
+"réussie."
 
-#: includes/class-cap-settings.php:645
+#: includes/class-cap-settings.php:717
 msgid "Verifying Accessibility Label"
 msgstr "Libellé d'accessibilité de vérification"
 
-#: includes/class-cap-settings.php:651
-#: includes/class-cap-widget.php:168
+#: includes/class-cap-settings.php:723 includes/class-cap-widget.php:306
 msgid "Verifying you're a human, please wait"
 msgstr "Vérification en cours, veuillez patienter"
 
-#: includes/class-cap-settings.php:652
+#: includes/class-cap-settings.php:724
 msgid "Accessibility/ARIA screen-reader message read when verification starts."
-msgstr "Message d'accessibilité/lecteur d'écran ARIA lu lorsque la vérification commence."
+msgstr ""
+"Message d'accessibilité/lecteur d'écran ARIA lu lorsque la vérification "
+"commence."
 
-#: includes/class-cap-settings.php:658
+#: includes/class-cap-settings.php:730
 msgid "Action Accessibility Label"
 msgstr "Libellé d'accessibilité d'action"
 
-#: includes/class-cap-settings.php:664
-#: includes/class-cap-widget.php:173
+#: includes/class-cap-settings.php:736 includes/class-cap-widget.php:311
 msgid "Click to verify you're a human"
 msgstr "Cliquez pour prouver que vous êtes humain"
 
-#: includes/class-cap-settings.php:665
-msgid "Accessibility/ARIA screen-reader description for the click target button."
+#: includes/class-cap-settings.php:737
+msgid ""
+"Accessibility/ARIA screen-reader description for the click target button."
 msgstr "Description d'accessibilité/lecteur d'écran ARIA pour le bouton cible."
 
-#: includes/class-cap-settings.php:671
+#: includes/class-cap-settings.php:743
 msgid "Error Label"
 msgstr "Libellé d'erreur"
 
-#: includes/class-cap-settings.php:677
-#: includes/class-cap-widget.php:170
+#: includes/class-cap-settings.php:749 includes/class-cap-widget.php:308
 msgid "Error"
 msgstr "Erreur"
 
-#: includes/class-cap-settings.php:678
+#: includes/class-cap-settings.php:750
 msgid "General error text shown in the widget when verification fails."
-msgstr "Texte d'erreur général affiché dans le widget en cas d'échec de la vérification."
+msgstr ""
+"Texte d'erreur général affiché dans le widget en cas d'échec de la "
+"vérification."
 
-#: includes/class-cap-settings.php:684
+#: includes/class-cap-settings.php:756
+msgid "Verification Failed Error Message"
+msgstr "Message d'erreur de vérification échouée"
+
+#: includes/class-cap-settings.php:762 includes/class-cap-widget.php:21
+#: includes/class-cap-integrations.php:375
+msgid "Captcha verification failed"
+msgstr "La vérification du Captcha a échoué"
+
+#: includes/class-cap-settings.php:763
+msgid "Error message displayed on submission when captcha verification fails."
+msgstr ""
+"Message d'erreur affiché lors de la soumission lorsque la vérification du "
+"captcha échoue."
+
+#: includes/class-cap-settings.php:769
 msgid "Error Accessibility Label"
 msgstr "Libellé d'accessibilité d'erreur"
 
-#: includes/class-cap-settings.php:690
-#: includes/class-cap-widget.php:171
+#: includes/class-cap-settings.php:775 includes/class-cap-widget.php:309
 msgid "An error occurred, please try again"
 msgstr "Une erreur s'est produite, veuillez réessayer"
 
-#: includes/class-cap-settings.php:691
-msgid "Accessibility/ARIA screen-reader error message read when verification fails."
-msgstr "Message d'accessibilité/lecteur d'écran ARIA lu en cas d'échec de la vérification."
+#: includes/class-cap-settings.php:776
+msgid ""
+"Accessibility/ARIA screen-reader error message read when verification fails."
+msgstr ""
+"Message d'accessibilité/lecteur d'écran ARIA lu en cas d'échec de la "
+"vérification."
 
-#: includes/class-cap-settings.php:697
+#: includes/class-cap-settings.php:782
 msgid "WASM Warning Label"
 msgstr "Libellé d'avertissement WASM"
 
-#: includes/class-cap-settings.php:703
-#: includes/class-cap-widget.php:172
+#: includes/class-cap-settings.php:788 includes/class-cap-widget.php:310
 msgid "Enable WASM for significantly faster solving"
 msgstr "Activez WASM pour une résolution plus rapide"
 
-#: includes/class-cap-settings.php:704
-msgid "Warning message shown to users who have WebAssembly disabled in their browser."
-msgstr "Message d'avertissement affiché aux utilisateurs qui ont désactivé WebAssembly dans leur navigateur."
+#: includes/class-cap-settings.php:789
+msgid ""
+"Warning message shown to users who have WebAssembly disabled in their "
+"browser."
+msgstr ""
+"Message d'avertissement affiché aux utilisateurs qui ont désactivé "
+"WebAssembly dans leur navigateur."
 
-#: includes/class-cap-settings.php:710
+#: includes/class-cap-settings.php:795
 msgid "Troubleshooting Link Label"
 msgstr "Libellé du lien de dépannage"
 
-#: includes/class-cap-settings.php:716
-#: includes/class-cap-widget.php:174
+#: includes/class-cap-settings.php:801 includes/class-cap-widget.php:312
 msgid "Troubleshoot"
 msgstr "Dépannage"
 
-#: includes/class-cap-settings.php:717
-msgid "The text for the troubleshooting guide link displayed when verification fails."
-msgstr "Le texte du lien vers le guide de dépannage affiché en cas d'échec de la vérification."
+#: includes/class-cap-settings.php:802
+msgid ""
+"The text for the troubleshooting guide link displayed when verification "
+"fails."
+msgstr ""
+"Le texte du lien vers le guide de dépannage affiché en cas d'échec de la "
+"vérification."
 
-#: includes/class-cap-settings.php:759
+#: includes/class-cap-settings.php:847
 msgid "All settings have been reset to defaults."
 msgstr "Tous les réglages ont été réinitialisés aux valeurs par défaut."
 
-#: includes/class-cap-settings.php:761
+#: includes/class-cap-settings.php:849
 msgid "Style settings have been reset to defaults."
 msgstr "Les réglages de style ont été réinitialisés aux valeurs par défaut."
 
-#: includes/class-cap-settings.php:794
+#: includes/class-cap-settings.php:882
 msgid "Connection"
 msgstr "Connexion"
 
-#: includes/class-cap-settings.php:795
+#: includes/class-cap-settings.php:883
 msgid "Forms"
 msgstr "Formulaires"
 
-#: includes/class-cap-settings.php:796
+#: includes/class-cap-settings.php:884
 msgid "Styling"
 msgstr "Style"
 
-#: includes/class-cap-settings.php:797
+#: includes/class-cap-settings.php:885
 msgid "Labels"
 msgstr "Libellés"
 
-#: includes/class-cap-settings.php:809
+#: includes/class-cap-settings.php:897
 msgid "Test Connection"
 msgstr "Tester la connexion"
 
-#: includes/class-cap-settings.php:810
-msgid "Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first."
-msgstr "Vérifie que l'URL de l'endpoint est joignable et renvoie un défi valide. Enregistrez vos réglages d'abord."
+#: includes/class-cap-settings.php:898
+msgid ""
+"Checks the currently entered Instance URL, Site Key, and Secret Key before "
+"you save them."
+msgstr ""
+"Vérifie l’URL de l’instance, la clé du site et la clé secrète actuellement "
+"saisies avant leur enregistrement."
 
-#: includes/class-cap-settings.php:812
+#: includes/class-cap-settings.php:900
 msgid "Test connection"
 msgstr "Tester la connexion"
 
-#: includes/class-cap-settings.php:828
+#: includes/class-cap-settings.php:916
 msgid "Reset Style Settings"
 msgstr "Réinitialiser les réglages de style"
 
-#: includes/class-cap-settings.php:840
+#: includes/class-cap-settings.php:928
 msgid "Save Settings"
 msgstr "Enregistrer les réglages"
 
-#: includes/class-cap-settings.php:842
+#: includes/class-cap-settings.php:930
 msgid "Reset All Settings"
 msgstr "Réinitialiser tous les réglages"
 
-#: includes/class-cap-settings.php:867
+#: includes/class-cap-settings.php:982
 msgid "Testing…"
 msgstr "Test en cours…"
 
-#: includes/class-cap-settings.php:890
+#: includes/class-cap-settings.php:1004
 msgid "Request failed."
 msgstr "La requête a échoué."
 
-#: includes/class-cap-settings.php:966
-msgid "Are you sure you want to reset all settings? This will clear all configuration and styles."
-msgstr "Êtes-vous sûr de vouloir réinitialiser tous les réglages ? Cela effacera toute la configuration et les styles."
+#: includes/class-cap-settings.php:1018
+msgid ""
+"The login captcha is enabled, but the changed Cap credentials have not "
+"passed the connection test. Saving them may prevent administrators from "
+"logging in. Save anyway?"
+msgstr ""
+"Le captcha de connexion est activé, mais les identifiants Cap modifiés n’ont "
+"pas réussi le test de connexion. Leur enregistrement peut empêcher les "
+"administrateurs de se connecter. Enregistrer quand même ?"
 
-#: includes/class-cap-settings.php:974
+#: includes/class-cap-settings.php:1068
+msgid ""
+"Are you sure you want to reset all settings? This will clear all "
+"configuration and styles."
+msgstr ""
+"Êtes-vous sûr de vouloir réinitialiser tous les réglages ? Cela effacera "
+"toute la configuration et les styles."
+
+#: includes/class-cap-settings.php:1076
 msgid "Are you sure you want to reset all style settings to defaults?"
-msgstr "Êtes-vous sûr de vouloir réinitialiser tous les réglages de style aux valeurs par défaut ?"
+msgstr ""
+"Êtes-vous sûr de vouloir réinitialiser tous les réglages de style aux "
+"valeurs par défaut ?"
 
-#: includes/class-cap-settings.php:988
+#: includes/class-cap-settings.php:1090
 msgid "Widget (visible)"
 msgstr "Widget (visible)"
 
-#: includes/class-cap-settings.php:989
+#: includes/class-cap-settings.php:1091
 msgid "Programmatic (invisible)"
 msgstr "Programmatique (invisible)"
 
-#: includes/class-cap-settings.php:991
-msgid "Programmatic mode solves the challenge silently in the background — no widget is shown to the user."
-msgstr "Le mode programmatique résout le défi silencieusement en arrière-plan — aucun widget n'est affiché à l'utilisateur."
+#: includes/class-cap-settings.php:1093
+msgid ""
+"Programmatic mode solves the challenge silently in the background — no "
+"widget is shown to the user."
+msgstr ""
+"Le mode programmatique résout le défi silencieusement en arrière-plan — "
+"aucun widget n'est affiché à l'utilisateur."
 
-#: includes/class-cap-settings.php:998
+#: includes/class-cap-settings.php:1100
 msgid "Your Cap Standalone server URL, e.g. https://cap.example.com"
-msgstr "L'URL de votre serveur Cap autonome, par exemple https://cap.example.com"
+msgstr ""
+"L'URL de votre serveur Cap autonome, par exemple https://cap.example.com"
 
-#: includes/class-cap-settings.php:1005
+#: includes/class-cap-settings.php:1107
 msgid "The site key from your Cap dashboard."
 msgstr "La clé du site (Site Key) de votre tableau de bord Cap."
 
-#: includes/class-cap-settings.php:1012
+#: includes/class-cap-settings.php:1114
 msgid "The secret key from your Cap dashboard. Never expose this publicly."
-msgstr "La clé secrète de votre tableau de bord Cap. Ne jamais l'exposer publiquement."
+msgstr ""
+"La clé secrète de votre tableau de bord Cap. Ne jamais l'exposer "
+"publiquement."
 
-#: includes/class-cap-settings.php:1020
+#: includes/class-cap-settings.php:1122
 msgid "Seconds before abandoning the request to /siteverify."
 msgstr "Délai en secondes avant abandon de la requête vers /siteverify."
 
-#: includes/class-cap-settings.php:1027
-msgid "Allow requests through when the Cap server is unreachable (not recommended for high-security forms)."
-msgstr "Laisser passer les requêtes lorsque le serveur Cap est injoignable (non recommandé pour les formulaires hautement sécurisés)."
+#: includes/class-cap-settings.php:1129
+msgid ""
+"Allow requests through when the Cap server is unreachable (not recommended "
+"for high-security forms)."
+msgstr ""
+"Laisser passer les requêtes lorsque le serveur Cap est injoignable (non "
+"recommandé pour les formulaires hautement sécurisés)."
 
-#: includes/class-cap-settings.php:1034
-msgid "Get notified by email if the connection to your Cap server fails (either during the hourly check or on a frontend verification attempt). Leave empty to disable alerts."
-msgstr "Recevez une notification par e-mail si la connexion à votre serveur Cap échoue (soit lors de la vérification horaire, soit lors d'une tentative de vérification frontend). Laissez vide pour désactiver les alertes."
+#: includes/class-cap-settings.php:1139
+msgid ""
+"Get notified by email if the connection to your Cap server fails (either "
+"during the hourly check or on a frontend verification attempt). Leave empty "
+"to disable alerts."
+msgstr ""
+"Recevez une notification par e-mail si la connexion à votre serveur Cap "
+"échoue (soit lors de la vérification horaire, soit lors d'une tentative de "
+"vérification frontend). Laissez vide pour désactiver les alertes."
 
-#: includes/class-cap-settings.php:1041
-msgid "Hide the \"Cap\" link displayed in the bottom-right corner of the widget."
-msgstr "Masquer le lien « Cap » affiché dans le coin inférieur droit du widget."
+#: includes/class-cap-settings.php:1140
+msgid ""
+"Login recovery emails are sent separately to the email address stored on the "
+"requested administrator account. Recovery requires working WordPress email "
+"delivery."
+msgstr ""
+"Les e-mails de récupération de connexion sont envoyés séparément à l’adresse "
+"e-mail enregistrée sur le compte administrateur demandé. La récupération "
+"nécessite un envoi d’e-mails WordPress fonctionnel."
 
-#: includes/class-cap-settings.php:1046
+#: includes/class-cap-settings.php:1147
+msgid ""
+"Hide the \"Cap\" link displayed in the bottom-right corner of the widget."
+msgstr ""
+"Masquer le lien « Cap » affiché dans le coin inférieur droit du widget."
+
+#: includes/class-cap-settings.php:1152
 msgid "Select which WordPress forms you want to protect using Cap."
 msgstr "Sélectionnez les formulaires WordPress à protéger avec Cap."
 
-#: includes/class-cap-settings.php:1105
+#: includes/class-cap-settings.php:1213 includes/class-cap-settings.php:1308
 msgid "Background Color"
 msgstr "Couleur d'arrière-plan"
 
-#: includes/class-cap-settings.php:1109
+#: includes/class-cap-settings.php:1217 includes/class-cap-settings.php:1312
 msgid "Text Color"
 msgstr "Couleur du texte"
 
-#: includes/class-cap-settings.php:1113
-#: includes/class-cap-settings.php:1144
+#: includes/class-cap-settings.php:1221 includes/class-cap-settings.php:1252
+#: includes/class-cap-settings.php:1316
 msgid "Border Color"
 msgstr "Couleur de la bordure"
 
-#: includes/class-cap-settings.php:1117
+#: includes/class-cap-settings.php:1225
 msgid "Border Radius (px)"
 msgstr "Rayon de la bordure (px)"
 
-#: includes/class-cap-settings.php:1135
+#: includes/class-cap-settings.php:1243
 msgid "Checkbox Background"
 msgstr "Arrière-plan de la case"
 
-#: includes/class-cap-settings.php:1139
+#: includes/class-cap-settings.php:1247
 msgid "Checkmark Color"
 msgstr "Couleur de la coche"
 
-#: includes/class-cap-settings.php:1148
+#: includes/class-cap-settings.php:1256
 msgid "Border Style"
 msgstr "Style de la bordure"
 
-#: includes/class-cap-settings.php:1159
+#: includes/class-cap-settings.php:1267
 msgid "Border Width (px)"
 msgstr "Épaisseur de la bordure (px)"
 
-#: includes/class-cap-settings.php:1164
+#: includes/class-cap-settings.php:1272
 msgid "Checkbox Border Radius (px)"
 msgstr "Rayon de la bordure de la case (px)"
 
-#: includes/class-cap-settings.php:1178
+#: includes/class-cap-settings.php:1286
 msgid "Spinner Background Color"
 msgstr "Couleur d'arrière-plan du spinner"
 
-#: includes/class-cap-settings.php:1182
+#: includes/class-cap-settings.php:1290
 msgid "Spinner Color"
 msgstr "Couleur du spinner"
 
-#: includes/class-cap-settings.php:1240
-#: includes/class-cap-settings.php:1313
-#: includes/class-cap-settings.php:1603
+#: includes/class-cap-settings.php:1374 includes/class-cap-settings.php:1453
+#: includes/class-cap-settings.php:1828
 msgid "Unauthorized."
 msgstr "Non autorisé."
 
-#: includes/class-cap-settings.php:1355
+#: includes/class-cap-settings.php:1498
 msgid "No instance URL configured."
 msgstr "Aucune URL d'instance configurée."
 
-#: includes/class-cap-settings.php:1362
+#: includes/class-cap-settings.php:1505
 msgid "No Site Key configured."
 msgstr "Aucune clé de site configurée."
 
-#: includes/class-cap-settings.php:1369
+#: includes/class-cap-settings.php:1512
 msgid "Secret Key is empty."
 msgstr "La clé secrète est vide."
 
-#: includes/class-cap-settings.php:1418
-msgid "Forbidden (HTTP 403). The request was blocked. This can occur if \"Block Non-Browser User Agents\" is enabled on your Cap server, as connection checks from the WordPress backend do not use a browser User-Agent."
-msgstr "Accès interdit (HTTP 403). La requête a été bloquée. Cela peut se produire si \"Block Non-Browser User Agents\" est activé sur votre serveur Cap, car les tests de connexion depuis le backend WordPress n'utilisent pas d'agent utilisateur de navigateur."
+#: includes/class-cap-settings.php:1561
+msgid ""
+"Forbidden (HTTP 403). The request was blocked. This can occur if \"Block Non-"
+"Browser User Agents\" is enabled on your Cap server, as connection checks "
+"from the WordPress backend do not use a browser User-Agent."
+msgstr ""
+"Accès interdit (HTTP 403). La requête a été bloquée. Cela peut se produire "
+"si \"Block Non-Browser User Agents\" est activé sur votre serveur Cap, car "
+"les tests de connexion depuis le backend WordPress n'utilisent pas d'agent "
+"utilisateur de navigateur."
 
-#: includes/class-cap-settings.php:1424
+#. translators: 1: HTTP status code
+#: includes/class-cap-settings.php:1567
 #, php-format
 msgid "Server responded with HTTP %d — check your endpoint URL and Site Key."
-msgstr "Le serveur a répondu avec HTTP %d — vérifiez l'URL de votre endpoint et votre clé de site."
+msgstr ""
+"Le serveur a répondu avec HTTP %d — vérifiez l'URL de votre endpoint et "
+"votre clé de site."
 
-#: includes/class-cap-settings.php:1440
-msgid "Unauthorized origin. The Cap server has restricted access to other domains."
-msgstr "Origine non autorisée. Le serveur Cap a restreint l'accès à d'autres domaines."
+#: includes/class-cap-settings.php:1583
+msgid ""
+"Unauthorized origin. The Cap server has restricted access to other domains."
+msgstr ""
+"Origine non autorisée. Le serveur Cap a restreint l'accès à d'autres "
+"domaines."
 
-#: includes/class-cap-settings.php:1462
+#: includes/class-cap-settings.php:1605
 msgid "Failed to contact siteverify endpoint."
 msgstr "Échec de la connexion à l'endpoint siteverify."
 
-#: includes/class-cap-settings.php:1474
-msgid "✓ Connection successful — Cap server is reachable and responding correctly."
-msgstr "✓ Connexion réussie — le serveur Cap est joignable et répond correctement."
+#: includes/class-cap-settings.php:1617
+msgid ""
+"✓ Connection successful — Cap server is reachable and responding correctly."
+msgstr ""
+"✓ Connexion réussie — le serveur Cap est joignable et répond correctement."
 
-#: includes/class-cap-settings.php:1479
+#: includes/class-cap-settings.php:1622
 msgid "Siteverify endpoint not found (HTTP 404). Check your instance URL."
-msgstr "Endpoint siteverify introuvable (HTTP 404). Vérifiez l'URL de votre instance."
+msgstr ""
+"Endpoint siteverify introuvable (HTTP 404). Vérifiez l'URL de votre instance."
 
-#: includes/class-cap-settings.php:1484
+#: includes/class-cap-settings.php:1627
 msgid "Invalid Site Key or Secret Key."
 msgstr "Clé de site ou clé secrète invalide."
 
-#: includes/class-cap-settings.php:1500
+#. translators: 1: HTTP status code
+#: includes/class-cap-settings.php:1643
 #, php-format
 msgid "Siteverify responded with HTTP %d."
 msgstr "Siteverify a répondu avec HTTP %d."
 
-#: includes/class-cap-settings.php:1584
-msgid "CapConnect Alert:"
-msgstr "Alerte CapConnect :"
+#: includes/class-cap-settings.php:1745
+msgid "CapConnect security warning:"
+msgstr "Avertissement de sécurité CapConnect :"
 
-#: includes/class-cap-settings.php:1588
-#, php-format
-msgid "Connection to the Cap server is failing. Error: %1$s. Please check your %2$s."
-msgstr "La connexion au serveur Cap a échoué. Erreur : %1$s. Veuillez vérifier vos %2$s."
+#: includes/class-cap-settings.php:1746
+msgid ""
+"The login captcha is disabled by TPOW_DISABLE_LOGIN_CAPTCHA. Remove the "
+"constant from wp-config.php immediately after access has been restored."
+msgstr ""
+"Le captcha de connexion est désactivé par TPOW_DISABLE_LOGIN_CAPTCHA. "
+"Supprimez la constante de wp-config.php dès que l’accès est rétabli."
 
-#: includes/class-cap-settings.php:1590
-msgid "settings"
-msgstr "réglages"
-
-#: includes/class-cap-settings.php:1632
-msgid "Empty error message."
-msgstr "Message d'erreur vide."
-
-#: includes/class-cap-settings.php:1637
-msgid "Customize the text labels shown on the widget. Leave them empty to use the localized defaults based on WordPress language settings."
-msgstr "Personnalisez les libellés de texte affichés sur le widget. Laissez-les vides pour utiliser les valeurs par défaut localisées selon les réglages de langue de WordPress."
-
-#: includes/class-cap-settings.php:1641
+#: includes/class-cap-settings.php:1769
 msgid "CapConnect for WP:"
 msgstr "CapConnect pour WP :"
 
-#: includes/class-cap-settings.php:1645
+#. translators: 1: settings link HTML
+#: includes/class-cap-settings.php:1773
 #, php-format
-msgid "Please configure the Instance URL, Site Key, and Secret Key in the %1$s to enable captcha protection."
-msgstr "Veuillez configurer l'URL de l'instance, la clé du site et la clé secrète dans les %1$s pour activer la protection par captcha."
+msgid ""
+"Please configure the Instance URL, Site Key, and Secret Key in the %1$s to "
+"enable captcha protection."
+msgstr ""
+"Veuillez configurer l'URL de l'instance, la clé du site et la clé secrète "
+"dans les %1$s pour activer la protection par captcha."
+
+#: includes/class-cap-settings.php:1774 includes/class-cap-settings.php:1815
+msgid "settings"
+msgstr "réglages"
+
+#: includes/class-cap-settings.php:1809
+msgid "CapConnect Alert:"
+msgstr "Alerte CapConnect :"
+
+#. translators: 1: error message, 2: settings link HTML
+#: includes/class-cap-settings.php:1813
+#, php-format
+msgid ""
+"Connection to the Cap server is failing. Error: %1$s. Please check your %2$s."
+msgstr ""
+"La connexion au serveur Cap a échoué. Erreur : %1$s. Veuillez vérifier vos "
+"%2$s."
+
+#: includes/class-cap-settings.php:1857
+msgid "Empty error message."
+msgstr "Message d'erreur vide."
+
+#: includes/class-cap-settings.php:1862
+msgid ""
+"Customize the text labels shown on the widget. Leave them empty to use the "
+"localized defaults based on WordPress language settings."
+msgstr ""
+"Personnalisez les libellés de texte affichés sur le widget. Laissez-les "
+"vides pour utiliser les valeurs par défaut localisées selon les réglages de "
+"langue de WordPress."
+
+#: includes/class-cap-login-recovery.php:72
+msgid ""
+"Captcha recovery is active for one administrator account. Enter that "
+"account’s username and password to continue."
+msgstr ""
+"La récupération du captcha est active pour un compte administrateur. "
+"Saisissez le nom d’utilisateur et le mot de passe de ce compte pour "
+"continuer."
+
+#: includes/class-cap-login-recovery.php:83
+msgid "Captcha failed? Try administrator recovery."
+msgstr "Échec du captcha ? Essayez la récupération administrateur."
+
+#. translators: %s: Website name.
+#: includes/class-cap-login-recovery.php:225
+#, php-format
+msgid "[%s] Administrator captcha recovery"
+msgstr "[%s] Récupération du captcha administrateur"
+
+#. translators: 1: Website name, 2: Recovery URL.
+#: includes/class-cap-login-recovery.php:230
+#, php-format
+msgid ""
+"A captcha recovery was requested for an administrator account on %1$s.\n"
+"\n"
+"Confirm the request using this link:\n"
+"%2$s\n"
+"\n"
+"The link expires in 15 minutes. It does not log anyone in; the correct "
+"username and password are still required. If you did not request this email, "
+"you can ignore it."
+msgstr ""
+"Une récupération du captcha a été demandée pour un compte administrateur sur "
+"%1$s.\n"
+"\n"
+"Confirmez la demande à l’aide de ce lien :\n"
+"%2$s\n"
+"\n"
+"Le lien expire dans 15 minutes. Il ne connecte personne ; le nom "
+"d’utilisateur et le mot de passe corrects restent nécessaires. Si vous "
+"n’avez pas demandé cet e-mail, vous pouvez l’ignorer."
+
+#: includes/class-cap-login-recovery.php:354
+#: includes/class-cap-login-recovery.php:409
+msgid "Captcha Recovery"
+msgstr "Récupération du captcha"
+
+#: includes/class-cap-login-recovery.php:357
+msgid ""
+"If an eligible administrator account matches the information provided, a "
+"recovery email has been sent."
+msgstr ""
+"Si les informations fournies correspondent à un compte administrateur "
+"éligible, un e-mail de récupération a été envoyé."
+
+#: includes/class-cap-login-recovery.php:360
+#: includes/class-cap-login-recovery.php:377
+#: includes/class-cap-login-recovery.php:399
+#: includes/class-cap-login-recovery.php:417
+msgid "Back to login"
+msgstr "Retour à la connexion"
+
+#: includes/class-cap-login-recovery.php:368
+msgid "Administrator username or email address"
+msgstr "Nom d’utilisateur administrateur ou adresse e-mail"
+
+#: includes/class-cap-login-recovery.php:371
+msgid ""
+"We will send a short-lived captcha recovery link to the email address stored "
+"on the administrator account."
+msgstr ""
+"Nous enverrons un lien de récupération du captcha de courte durée à "
+"l’adresse e-mail enregistrée sur le compte administrateur."
+
+#: includes/class-cap-login-recovery.php:374
+msgid "Send recovery email"
+msgstr "Envoyer l’e-mail de récupération"
+
+#: includes/class-cap-login-recovery.php:387
+msgid "Confirm Captcha Recovery"
+msgstr "Confirmer la récupération du captcha"
+
+#: includes/class-cap-login-recovery.php:389
+msgid ""
+"Confirming creates a ten-minute captcha exception for this administrator "
+"account. You must still enter the correct username and password."
+msgstr ""
+"La confirmation crée une exception de captcha de dix minutes pour ce compte "
+"administrateur. Vous devez toujours saisir le nom d’utilisateur et le mot de "
+"passe corrects."
+
+#: includes/class-cap-login-recovery.php:394
+msgid ""
+"Use this button to activate the one-time captcha recovery for this "
+"administrator account."
+msgstr ""
+"Utilisez ce bouton pour activer la récupération unique du captcha pour ce "
+"compte administrateur."
+
+#: includes/class-cap-login-recovery.php:396
+msgid "Activate captcha recovery"
+msgstr "Activer la récupération du captcha"
+
+#: includes/class-cap-login-recovery.php:411
+msgid ""
+"This captcha recovery link is invalid, expired, or has already been used."
+msgstr ""
+"Ce lien de récupération du captcha est invalide, expiré ou a déjà été "
+"utilisé."
+
+#: includes/class-cap-login-recovery.php:414
+msgid "Request a new recovery link"
+msgstr "Demander un nouveau lien de récupération"
+
+#: includes/class-cap-integrations.php:198
+msgid "Cap Verification Failed"
+msgstr "Vérification Cap échouée"
+
+#~ msgid "Is the captcha preventing you from logging in?"
+#~ msgstr "Le captcha vous empêche-t-il de vous connecter ?"
+
+#~ msgid ""
+#~ "Checks that the endpoint URL is reachable and returns a valid challenge. "
+#~ "Save your settings first."
+#~ msgstr ""
+#~ "Vérifie que l'URL de l'endpoint est joignable et renvoie un défi valide. "
+#~ "Enregistrez vos réglages d'abord."

@@ -10,11 +10,16 @@ class Tpow_Integrations
 {
     private Tpow_Verifier $verifier;
     private Tpow_Widget $widget;
+    private Tpow_Login_Recovery $loginRecovery;
 
-    public function __construct()
+    /**
+     * Creates the form integrations and their login recovery dependency.
+     */
+    public function __construct(?Tpow_Login_Recovery $loginRecovery = null)
     {
-        $this->verifier = new Tpow_Verifier();
-        $this->widget   = new Tpow_Widget();
+        $this->verifier      = new Tpow_Verifier();
+        $this->widget        = new Tpow_Widget();
+        $this->loginRecovery = $loginRecovery ?? new Tpow_Login_Recovery();
     }
 
     public function init(): void
@@ -41,9 +46,12 @@ class Tpow_Integrations
         add_filter('preprocess_comment', [$this, 'validateCommentToken']);
     }
 
+    /**
+     * Registers login protection unless the emergency bypass is active.
+     */
     private function initLoginIntegration(): void
     {
-        if (! get_option('tpow_protect_login', true)) {
+        if (! get_option('tpow_protect_login', true) || $this->loginRecovery->isLoginCaptchaDisabled()) {
             return;
         }
         add_action('login_form', [$this, 'renderWidgetLogin']);
@@ -123,8 +131,15 @@ class Tpow_Integrations
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
+    /**
+     * Renders the login widget unless a validated recovery session replaces it.
+     */
     public function renderWidgetLogin(): void
     {
+        if ($this->loginRecovery->hasActiveSession()) {
+            return;
+        }
+
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
         if (get_option('tpow_mode', 'widget') !== 'programmatic') {
@@ -188,15 +203,23 @@ class Tpow_Integrations
         return $commentData;
     }
 
+    /**
+     * Validates the login captcha or consumes a matching administrator recovery session.
+     */
     public function validateLoginToken(\WP_User|\WP_Error $user, string $password): \WP_User|\WP_Error
     {
         if (is_wp_error($user)) {
             return $user;
         }
 
+        if ($this->loginRecovery->consumeForUser($user)) {
+            return $user;
+        }
+
         $token = $this->getToken();
 
         if (! $this->verifier->verify($token)) {
+            $this->loginRecovery->markCaptchaValidationFailed();
             return new \WP_Error(
                 'tpow_verification_failed',
                 $this->getVerificationFailedMessage()

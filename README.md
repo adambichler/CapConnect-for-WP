@@ -40,6 +40,24 @@ Access **Settings > CapConnect** in the WordPress administration panel. The opti
 | Fail Open | If checked, lets the request through in case of communication error with Cap | unchecked |
 | Alert Email | Email address to receive notifications if connection to the Cap server fails. Leave blank to disable alerts. | — |
 
+#### Administrator login recovery
+
+When login protection is enabled, the WordPress login form includes an administrator captcha recovery link. An administrator can request an email at the address stored on their WordPress user account. The email link is valid for 15 minutes and, after explicit confirmation, creates a captcha exception for that account for up to 10 minutes.
+
+The recovery link does not authenticate the administrator. The correct username or email address and password are still required. The exception is bound to one administrator account and site and is consumed by its first successful login. Requests are limited to three emails per administrator account and ten requests per direct IP address per hour. Only the latest email link remains valid, and opening the link without confirming it does not consume it.
+
+Recovery requires working WordPress email delivery and a valid email address on the administrator account. The **Alert Email** setting is not used for account recovery. HTTPS is strongly recommended so the short-lived recovery cookie can use the `Secure` attribute.
+
+Before saving changed Cap credentials while login protection is active, use **Test connection**. The plugin warns before untested credentials are saved but does not block the save, because temporary outages and planned migrations must remain possible.
+
+For a mail-independent emergency fallback, add the following temporary constant to `wp-config.php`:
+
+```php
+define('TPOW_DISABLE_LOGIN_CAPTCHA', true);
+```
+
+This disables Cap only on the WordPress login form. All other protected forms remain unchanged. Remove the constant immediately after administrator access and the Cap configuration have been restored.
+
 #### Fail-open mode & Health Check
 
 By default, any communication error with the Cap instance (network, timeout, 5xx error) blocks the request. Enabling **Fail Open** reverses this behavior: infrastructure errors will let the request through.

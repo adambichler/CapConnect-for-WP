@@ -74,3 +74,32 @@ cap-widget {
   line-height: 1.5;
   margin-bottom: 16px;
 }
+
+#login .tpow-recovery-active-message {
+  margin-bottom: 16px;
+}
+
+#login .tpow-recovery-submit {
+  margin-top: 16px;
+}
+
+#login .tpow-recovery-button {
+  width: 100%;
+  margin-top: 16px;
+}
+
+#login .tpow-recovery-error {
+  margin-bottom: 16px;
+}
+
+#login .tpow-recovery-submit-flush {
+  margin: 0;
+}
+
+#login .tpow-recovery-link-button {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 16px;
+}

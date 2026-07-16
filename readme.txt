@@ -66,6 +66,16 @@ After activation, navigate to **Settings > CapConnect**. The settings are divide
     * Customize background colors, text colors, borders, checkmark, and spinner styles for the visible widget (only active in Widget mode).
     * **Hide Attribution Link** — Toggle to hide the "Cap" link at the bottom-right of the widget.
 
+= Administrator login recovery =
+
+When login protection is enabled, administrators can request a captcha recovery email from the WordPress login form. The email is sent only to the address stored on an eligible administrator account, not to the configured alert address.
+
+The email link is valid for 15 minutes. After explicit confirmation it creates a captcha exception for that account and site for up to 10 minutes. It does not log the administrator in: the correct username or email address and password are still required. The exception is consumed by the first successful login. Requests are limited to three emails per administrator account and ten requests per direct IP address per hour, and only the latest link remains valid.
+
+Recovery requires working WordPress email delivery. HTTPS is strongly recommended so the recovery cookie can use the `Secure` attribute. Test changed Cap credentials before saving them when login protection is active. Untested values can still be saved, but the settings page displays a lockout warning.
+
+As a mail-independent emergency fallback, temporarily add `define('TPOW_DISABLE_LOGIN_CAPTCHA', true);` to `wp-config.php`. This disables Cap only for the WordPress login form. Remove the constant immediately after access has been restored.
+
 == Frequently Asked Questions ==
 
 = Does this plugin work without a Cap server? =

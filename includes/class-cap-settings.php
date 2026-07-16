@@ -8,6 +8,11 @@ if (! defined('ABSPATH')) {
 
 class Tpow_Settings
 {
+    private bool $credentialCheckScheduled = false;
+
+    /**
+     * Registers the settings, health checks, and administrator notices.
+     */
     public function init(): void
     {
         add_action('admin_menu', [$this, 'addMenuPage']);
@@ -20,12 +25,13 @@ class Tpow_Settings
         add_action('tpow_hourly_connection_check', [$this, 'runHourlyCheck']);
         add_action('admin_notices', [$this, 'displayConnectionFailedNotice']);
         add_action('admin_notices', [$this, 'displayCredentialsMissingNotice']);
+        add_action('admin_notices', [$this, 'displayLoginCaptchaDisabledNotice']);
 
-        // Reset alert status and verify connection when credentials or alert settings change
+        // Verify the final credential set once and reset alert throttling when its recipient changes.
         add_action('update_option_tpow_instance_url', [$this, 'handleCredentialUpdate']);
         add_action('update_option_tpow_site_key', [$this, 'handleCredentialUpdate']);
         add_action('update_option_tpow_secret', [$this, 'handleCredentialUpdate']);
-        add_action('update_option_tpow_alert_email', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_tpow_alert_email', [$this, 'clearAlertSent']);
 
         // Settings link on the plugins list page
         $plugin_file = TPOW_PLUGIN_DIR . 'capconnect-for-wp.php';
@@ -828,6 +834,9 @@ class Tpow_Settings
         echo '</table>';
     }
 
+    /**
+     * Renders the plugin settings and connection-test safeguards.
+     */
     public function renderPage(): void
     {
         if (! current_user_can('manage_options')) {
@@ -876,7 +885,7 @@ class Tpow_Settings
                 <a href="#labels" class="nav-tab" data-tab="labels"><?php esc_html_e('Labels', 'capconnect-for-wp'); ?></a>
             </h2>
 
-            <form method="post" action="options.php">
+            <form id="tpow-settings-form" method="post" action="options.php">
                 <?php settings_fields('tpow_settings_group'); ?>
                 <input type="hidden" name="tpow_current_edit_locale" value="<?php echo esc_attr(self::getCurrentLanguage()); ?>" />
 
@@ -886,7 +895,7 @@ class Tpow_Settings
                     
                     <div class="tpow-test-connection-wrapper">
                         <h2><?php esc_html_e('Test Connection', 'capconnect-for-wp'); ?></h2>
-                        <p><?php esc_html_e('Checks that the endpoint URL is reachable and returns a valid challenge. Save your settings first.', 'capconnect-for-wp'); ?></p>
+                        <p><?php esc_html_e('Checks the currently entered Instance URL, Site Key, and Secret Key before you save them.', 'capconnect-for-wp'); ?></p>
                         <button type="button" id="tpow-test-btn" class="button button-secondary">
                             <?php esc_html_e('Test connection', 'capconnect-for-wp'); ?>
                         </button>
@@ -939,20 +948,45 @@ class Tpow_Settings
                 var nonce = <?php echo wp_json_encode(wp_create_nonce('tpow_test_connection')); ?>;
                 var btn    = document.getElementById('tpow-test-btn');
                 var result = document.getElementById('tpow-test-result');
+                var settingsForm = document.getElementById('tpow-settings-form');
+                var loginProtection = settingsForm.querySelector('input[name="tpow_protect_login"]');
+                var initialLoginProtection = <?php echo wp_json_encode((bool) get_option('tpow_protect_login', true)); ?>;
+                var initialCredentials = {
+                    instanceUrl: <?php echo wp_json_encode((string) get_option('tpow_instance_url', '')); ?>,
+                    siteKey: <?php echo wp_json_encode((string) get_option('tpow_site_key', '')); ?>,
+                    secret: <?php echo wp_json_encode((string) get_option('tpow_secret', '')); ?>
+                };
+                var testedCredentials = null;
+
+                /**
+                 * Returns the connection credentials currently entered in the form.
+                 */
+                function getCredentials() {
+                    return {
+                        instanceUrl: settingsForm.querySelector('input[name="tpow_instance_url"]').value,
+                        siteKey: settingsForm.querySelector('input[name="tpow_site_key"]').value,
+                        secret: settingsForm.querySelector('input[name="tpow_secret"]').value
+                    };
+                }
+
+                /**
+                 * Returns a stable comparison value for the current credentials.
+                 */
+                function credentialFingerprint(credentials) {
+                    return JSON.stringify(credentials);
+                }
 
                 btn.addEventListener('click', function () {
                     btn.disabled   = true;
                     result.style.color = '#666';
                     result.textContent = '<?php esc_html_e('Testing…', 'capconnect-for-wp'); ?>';
 
-                    var instanceUrl = document.querySelector('input[name="tpow_instance_url"]').value;
-                    var siteKey = document.querySelector('input[name="tpow_site_key"]').value;
-                    var secret = document.querySelector('input[name="tpow_secret"]').value;
+                    var credentials = getCredentials();
 
                     var body = 'action=tpow_test_connection&nonce=' + encodeURIComponent(nonce) +
-                               '&instance_url=' + encodeURIComponent(instanceUrl) +
-                               '&site_key=' + encodeURIComponent(siteKey) +
-                               '&secret=' + encodeURIComponent(secret);
+                               '&instance_url=' + encodeURIComponent(credentials.instanceUrl) +
+                               '&site_key=' + encodeURIComponent(credentials.siteKey) +
+                               '&secret=' + encodeURIComponent(credentials.secret);
 
                     fetch(ajaxurl, {
                         method:  'POST',
@@ -963,12 +997,29 @@ class Tpow_Settings
                     .then(function (data) {
                         result.style.color = data.success ? 'green' : '#cc0000';
                         result.textContent = data.data.message;
+                        testedCredentials = data.success ? credentialFingerprint(credentials) : null;
                     })
                     .catch(function () {
                         result.style.color = '#cc0000';
                         result.textContent = '<?php esc_html_e('Request failed.', 'capconnect-for-wp'); ?>';
+                        testedCredentials = null;
                     })
                     .finally(function () { btn.disabled = false; });
+                });
+
+                settingsForm.addEventListener('submit', function (event) {
+                    var currentCredentials = getCredentials();
+                    var credentialsChanged = credentialFingerprint(currentCredentials) !== credentialFingerprint(initialCredentials);
+                    var loginProtectionEnabled = loginProtection && loginProtection.checked;
+                    var loginProtectionEnabledNow = loginProtectionEnabled && ! initialLoginProtection;
+                    var currentCredentialsTested = testedCredentials === credentialFingerprint(currentCredentials);
+
+                    if (loginProtectionEnabled && (credentialsChanged || loginProtectionEnabledNow) && ! currentCredentialsTested) {
+                        var confirmed = window.confirm('<?php echo esc_js(__('The login captcha is enabled, but the changed Cap credentials have not passed the connection test. Saving them may prevent administrators from logging in. Save anyway?', 'capconnect-for-wp')); ?>');
+                        if (! confirmed) {
+                            event.preventDefault();
+                        }
+                    }
                 });
             })();
             </script>
@@ -1078,11 +1129,15 @@ class Tpow_Settings
         echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'capconnect-for-wp') . '</label>';
     }
 
+    /**
+     * Renders alert and account-recovery email guidance.
+     */
     public function renderAlertEmailField(): void
     {
         $value = get_option('tpow_alert_email', '');
         echo '<input type="email" name="tpow_alert_email" value="' . esc_attr($value) . '" class="regular-text" placeholder="admin@example.com" />';
         echo '<p class="description">' . esc_html__('Get notified by email if the connection to your Cap server fails (either during the hourly check or on a frontend verification attempt). Leave empty to disable alerts.', 'capconnect-for-wp') . '</p>';
+        echo '<p class="description">' . esc_html__('Login recovery emails are sent separately to the email address stored on the requested administrator account. Recovery requires working WordPress email delivery.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderHideAttributionField(): void
@@ -1638,12 +1693,31 @@ class Tpow_Settings
         }
     }
 
+    /**
+     * Clears the connection-alert throttle.
+     */
     public function clearAlertSent(): void
     {
         delete_option('tpow_alert_sent');
     }
 
+    /**
+     * Schedules one connection check after all credential options were updated.
+     */
     public function handleCredentialUpdate(): void
+    {
+        if ($this->credentialCheckScheduled) {
+            return;
+        }
+
+        $this->credentialCheckScheduled = true;
+        add_action('shutdown', [$this, 'verifyUpdatedCredentials']);
+    }
+
+    /**
+     * Verifies the final credential combination after all settings were saved.
+     */
+    public function verifyUpdatedCredentials(): void
     {
         $this->clearAlertSent();
         $result = self::checkConnection();
@@ -1652,6 +1726,27 @@ class Tpow_Settings
         } else {
             update_option('tpow_connection_failed_notice', $result['message']);
         }
+    }
+
+    /**
+     * Warns administrators while the emergency login captcha bypass is enabled.
+     */
+    public function displayLoginCaptchaDisabledNotice(): void
+    {
+        if (! current_user_can('manage_options')
+            || ! defined('TPOW_DISABLE_LOGIN_CAPTCHA')
+            || TPOW_DISABLE_LOGIN_CAPTCHA !== true
+        ) {
+            return;
+        }
+        ?>
+        <div class="notice notice-error">
+            <p>
+                <strong><?php esc_html_e('CapConnect security warning:', 'capconnect-for-wp'); ?></strong>
+                <?php esc_html_e('The login captcha is disabled by TPOW_DISABLE_LOGIN_CAPTCHA. Remove the constant from wp-config.php immediately after access has been restored.', 'capconnect-for-wp'); ?>
+            </p>
+        </div>
+        <?php
     }
 
     /**

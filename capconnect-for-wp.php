@@ -49,13 +49,16 @@ $pucChecker->getVcsApi()->enableReleaseAssets();
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-verifier.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-settings.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-widget.php';
+require_once TPOW_PLUGIN_DIR . 'includes/class-cap-login-recovery.php';
 require_once TPOW_PLUGIN_DIR . 'includes/class-cap-integrations.php';
 
 (new Tpow_Settings())->init();
 (new Tpow_Widget())->init();
 
 add_action('plugins_loaded', function(): void {
-    (new Tpow_Integrations())->init();
+    $loginRecovery = new Tpow_Login_Recovery();
+    $loginRecovery->init();
+    (new Tpow_Integrations($loginRecovery))->init();
 });
 
 
