@@ -1684,6 +1684,9 @@ class Tpow_Settings
         <?php
     }
 
+    /**
+     * Displays a connection warning unless Fail Open is enabled.
+     */
     public function displayConnectionFailedNotice(): void
     {
         if (! current_user_can('manage_options')) {
@@ -1691,6 +1694,11 @@ class Tpow_Settings
         }
 
         if (! self::isConfigured()) {
+            return;
+        }
+
+        // Fail Open intentionally tolerates infrastructure failures, so do not show a load-time error.
+        if ((bool) get_option('tpow_fail_open', false)) {
             return;
         }
 

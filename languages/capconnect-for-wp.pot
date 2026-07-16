@@ -17,8 +17,16 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: includes/class-cap-verifier.php:58
+#: includes/class-cap-verifier.php:32
 msgid "Server responded with HTTP status code %d"
+msgstr ""
+
+#: includes/class-cap-verifier.php:51
+msgid "Cap server returned invalid JSON."
+msgstr ""
+
+#: includes/class-cap-verifier.php:57
+msgid "Cap server returned an unexpected response."
 msgstr ""
 
 msgid "Captcha verification failed"

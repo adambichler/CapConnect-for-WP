@@ -136,6 +136,15 @@ class Tpow_Widget
     var cfg = window.TPOW_CONFIG;
     if (!cfg || !cfg.apiEndpoint || typeof window.Cap === 'undefined') return;
     var cap = new window.Cap({ apiEndpoint: cfg.apiEndpoint });
+
+    // The vendor stylesheet forces cap-widget to display, so override it for programmatic mode.
+    if (!cap.widget || !cap.widget.style || typeof cap.widget.style.setProperty !== 'function' || typeof cap.widget.setAttribute !== 'function') {
+        console.error('[cap] Programmatic widget is unavailable.');
+        return;
+    }
+    cap.widget.style.setProperty('display', 'none', 'important');
+    cap.widget.setAttribute('aria-hidden', 'true');
+
     var tokenPromise = cap.solve();
     var solveError = null;
 

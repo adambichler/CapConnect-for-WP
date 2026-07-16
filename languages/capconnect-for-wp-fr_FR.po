@@ -14,10 +14,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Domain: capconnect-for-wp\n"
 
-#: includes/class-cap-verifier.php:58
+#: includes/class-cap-verifier.php:32
 #, php-format
 msgid "Server responded with HTTP status code %d"
 msgstr "Le serveur a répondu avec le code de statut HTTP %d"
+
+#: includes/class-cap-verifier.php:51
+msgid "Cap server returned invalid JSON."
+msgstr "Le serveur Cap a renvoyé un JSON invalide."
+
+#: includes/class-cap-verifier.php:57
+msgid "Cap server returned an unexpected response."
+msgstr "Le serveur Cap a renvoyé une réponse inattendue."
 
 msgid "Captcha verification failed"
 msgstr "La vérification du Captcha a échoué"
