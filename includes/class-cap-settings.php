@@ -6,8 +6,30 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Tpow_Settings
+class Capconnect_Settings
 {
+    private const PREFIX_MIGRATION_VERSION = '1';
+
+    /** @var list<string> */
+    private const LEGACY_OPTION_SUFFIXES = [
+        'endpoint', 'instance_url', 'site_key', 'secret', 'token_field', 'timeout', 'fail_open',
+        'alert_email', 'alert_sent', 'connection_failed_notice', 'hide_attribution', 'mode',
+        'background', 'color', 'border_color', 'border_radius', 'checkbox_background',
+        'checkbox_checkmark_color', 'checkbox_border_color', 'checkbox_border_style',
+        'checkbox_border_width', 'checkbox_border_radius', 'spinner_color', 'spinner_background',
+        'error_background', 'error_color', 'error_border_color', 'protect_login', 'protect_register',
+        'protect_lostpassword', 'protect_comments', 'protect_woocommerce', 'protect_gravityforms',
+        'protect_forminator', 'initial_state_label', 'initial_state_label_translations',
+        'verifying_label', 'verifying_label_translations', 'solved_label', 'solved_label_translations',
+        'required_label', 'required_label_translations', 'verified_aria_label',
+        'verified_aria_label_translations', 'verifying_aria_label',
+        'verifying_aria_label_translations', 'verify_aria_label',
+        'verify_aria_label_translations', 'error_label', 'error_label_translations',
+        'verification_failed_label', 'verification_failed_label_translations', 'error_aria_label',
+        'error_aria_label_translations', 'wasm_disabled_label', 'wasm_disabled_label_translations',
+        'troubleshoot_label', 'troubleshoot_label_translations',
+    ];
+
     private bool $credentialCheckScheduled = false;
 
     /**
@@ -17,48 +39,54 @@ class Tpow_Settings
     {
         add_action('admin_menu', [$this, 'addMenuPage']);
         add_action('admin_init', [$this, 'registerSettings']);
+        add_action('wp_ajax_capconnect_test_connection', [$this, 'handleTestConnection']);
+        add_action('wp_ajax_capconnect_report_frontend_error', [$this, 'handleReportFrontendError']);
+        add_action('wp_ajax_nopriv_capconnect_report_frontend_error', [$this, 'handleReportFrontendError']);
         add_action('wp_ajax_tpow_test_connection', [$this, 'handleTestConnection']);
         add_action('wp_ajax_tpow_report_frontend_error', [$this, 'handleReportFrontendError']);
         add_action('wp_ajax_nopriv_tpow_report_frontend_error', [$this, 'handleReportFrontendError']);
         add_action('admin_init', [$this, 'handleResetSettings']);
         add_action('admin_init', [$this, 'handleResetStyleSettings']);
+        add_action('capconnect_hourly_connection_check', [$this, 'runHourlyCheck']);
         add_action('tpow_hourly_connection_check', [$this, 'runHourlyCheck']);
         add_action('admin_notices', [$this, 'displayConnectionFailedNotice']);
         add_action('admin_notices', [$this, 'displayCredentialsMissingNotice']);
         add_action('admin_notices', [$this, 'displayLoginCaptchaDisabledNotice']);
 
         // Verify the final credential set once and reset alert throttling when its recipient changes.
-        add_action('update_option_tpow_instance_url', [$this, 'handleCredentialUpdate']);
-        add_action('update_option_tpow_site_key', [$this, 'handleCredentialUpdate']);
-        add_action('update_option_tpow_secret', [$this, 'handleCredentialUpdate']);
-        add_action('update_option_tpow_alert_email', [$this, 'clearAlertSent']);
+        add_action('update_option_capconnect_instance_url', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_capconnect_site_key', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_capconnect_secret', [$this, 'handleCredentialUpdate']);
+        add_action('update_option_capconnect_alert_email', [$this, 'clearAlertSent']);
 
         // Settings link on the plugins list page
-        $plugin_file = TPOW_PLUGIN_DIR . 'capconnect-for-wp.php';
+        $plugin_file = CAPCONNECT_PLUGIN_DIR . 'capconnect-for-wp.php';
         add_filter('plugin_action_links_' . plugin_basename($plugin_file), [$this, 'addSettingsLink']);
 
-        // Migrate legacy combined endpoint URL to separate fields
+        $this->migrateLegacyPrefix();
+
+        // Migrate the combined endpoint URL to separate fields.
         $this->migrateLegacyEndpoint();
 
         // Register filters to support locale-specific translations directly within the settings fields
         $multilingual_options = [
-            'tpow_initial_state_label',
-            'tpow_verifying_label',
-            'tpow_solved_label',
-            'tpow_required_label',
-            'tpow_verified_aria_label',
-            'tpow_verifying_aria_label',
-            'tpow_verify_aria_label',
-            'tpow_error_label',
-            'tpow_error_aria_label',
-            'tpow_wasm_disabled_label',
-            'tpow_troubleshoot_label',
-            'tpow_verification_failed_label',
+            'capconnect_initial_state_label',
+            'capconnect_verifying_label',
+            'capconnect_solved_label',
+            'capconnect_required_label',
+            'capconnect_verified_aria_label',
+            'capconnect_verifying_aria_label',
+            'capconnect_verify_aria_label',
+            'capconnect_error_label',
+            'capconnect_error_aria_label',
+            'capconnect_wasm_disabled_label',
+            'capconnect_troubleshoot_label',
+            'capconnect_verification_failed_label',
         ];
 
         foreach ($multilingual_options as $option) {
             add_filter("pre_update_option_{$option}", function($new_value) use ($option) {
-                $locale = isset($_POST['tpow_current_edit_locale']) ? sanitize_text_field(wp_unslash($_POST['tpow_current_edit_locale'])) : self::getCurrentLanguage();
+                $locale = isset($_POST['capconnect_current_edit_locale']) ? sanitize_text_field(wp_unslash($_POST['capconnect_current_edit_locale'])) : self::getCurrentLanguage();
                 $translations = get_option("{$option}_translations", []);
                 $translations[$locale] = $new_value;
                 update_option("{$option}_translations", $translations);
@@ -86,11 +114,45 @@ class Tpow_Settings
     }
 
     /**
+     * Migrates all known TPOW options once while preserving existing CapConnect values.
+     */
+    private function migrateLegacyPrefix(): void
+    {
+        if (get_option('capconnect_prefix_migration_version', '') === self::PREFIX_MIGRATION_VERSION) {
+            return;
+        }
+
+        $notFound = new stdClass();
+        foreach (self::LEGACY_OPTION_SUFFIXES as $suffix) {
+            $legacyOption = 'tpow_' . $suffix;
+            $capconnectOption = 'capconnect_' . $suffix;
+            $legacyValue = get_option($legacyOption, $notFound);
+
+            if ($legacyValue === $notFound) {
+                continue;
+            }
+
+            if (get_option($capconnectOption, $notFound) === $notFound) {
+                update_option($capconnectOption, $legacyValue);
+            }
+
+            delete_option($legacyOption);
+        }
+
+        wp_clear_scheduled_hook('tpow_hourly_connection_check');
+        if (! wp_next_scheduled('capconnect_hourly_connection_check')) {
+            wp_schedule_event(time(), 'hourly', 'capconnect_hourly_connection_check');
+        }
+
+        update_option('capconnect_prefix_migration_version', self::PREFIX_MIGRATION_VERSION);
+    }
+
+    /**
      * Adds a settings link on the WordPress plugins page.
      */
     public function addSettingsLink(array $links): array
     {
-        $settings_link = '<a href="' . esc_url(admin_url('options-general.php?page=tpow-settings')) . '">'
+        $settings_link = '<a href="' . esc_url(admin_url('options-general.php?page=capconnect-settings')) . '">'
             . esc_html__('Settings', 'capconnect-for-wp')
             . '</a>';
         array_unshift($links, $settings_link);
@@ -102,8 +164,8 @@ class Tpow_Settings
      */
     public static function getEndpoint(): string
     {
-        $instance = (string) get_option('tpow_instance_url', '');
-        $site_key = (string) get_option('tpow_site_key', '');
+        $instance = (string) get_option('capconnect_instance_url', '');
+        $site_key = (string) get_option('capconnect_site_key', '');
         if ($instance !== '' && $site_key !== '') {
             return rtrim($instance, '/') . '/' . ltrim($site_key, '/');
         }
@@ -115,18 +177,18 @@ class Tpow_Settings
      */
     public static function isConfigured(): bool
     {
-        $instance = trim((string) get_option('tpow_instance_url', ''));
-        $site_key = trim((string) get_option('tpow_site_key', ''));
-        $secret   = trim((string) get_option('tpow_secret', ''));
+        $instance = trim((string) get_option('capconnect_instance_url', ''));
+        $site_key = trim((string) get_option('capconnect_site_key', ''));
+        $secret   = trim((string) get_option('capconnect_secret', ''));
         return $instance !== '' && $site_key !== '' && $secret !== '';
     }
 
     /**
-     * Migrates the legacy combined tpow_endpoint to separate options.
+     * Migrates the combined CapConnect endpoint to separate options.
      */
     private function migrateLegacyEndpoint(): void
     {
-        $endpoint = trim((string) get_option('tpow_endpoint', ''));
+        $endpoint = trim((string) get_option('capconnect_endpoint', ''));
         if ($endpoint !== '') {
             $parsed_url = wp_parse_url($endpoint);
             if ($parsed_url && isset($parsed_url['path'])) {
@@ -146,9 +208,13 @@ class Tpow_Settings
                         $instance_url .= '/' . $remaining_path;
                     }
                     
-                    update_option('tpow_instance_url', $instance_url);
-                    update_option('tpow_site_key', $site_key);
-                    delete_option('tpow_endpoint');
+                    if (get_option('capconnect_instance_url', '') === '') {
+                        update_option('capconnect_instance_url', $instance_url);
+                    }
+                    if (get_option('capconnect_site_key', '') === '') {
+                        update_option('capconnect_site_key', $site_key);
+                    }
+                    delete_option('capconnect_endpoint');
                 }
             }
         }
@@ -163,7 +229,7 @@ class Tpow_Settings
             __('CapConnect for WP — Settings', 'capconnect-for-wp'),
             __('CapConnect', 'capconnect-for-wp'),
             'manage_options',
-            'tpow-settings',
+            'capconnect-settings',
             [$this, 'renderPage']
         );
         add_action("admin_print_scripts-{$hook}", [$this, 'enqueueAdminScripts']);
@@ -171,633 +237,633 @@ class Tpow_Settings
 
     public function registerSettings(): void
     {
-        register_setting('tpow_settings_group', 'tpow_instance_url', [
+        register_setting('capconnect_settings_group', 'capconnect_instance_url', [
             'type'              => 'string',
             'sanitize_callback' => 'esc_url_raw',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_site_key', [
+        register_setting('capconnect_settings_group', 'capconnect_site_key', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_secret', [
+        register_setting('capconnect_settings_group', 'capconnect_secret', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
 
-        register_setting('tpow_settings_group', 'tpow_timeout', [
+        register_setting('capconnect_settings_group', 'capconnect_timeout', [
             'type'              => 'integer',
             'sanitize_callback' => 'absint',
             'default'           => 5,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_fail_open', [
+        register_setting('capconnect_settings_group', 'capconnect_fail_open', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => false,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_alert_email', [
+        register_setting('capconnect_settings_group', 'capconnect_alert_email', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_email',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_hide_attribution', [
+        register_setting('capconnect_settings_group', 'capconnect_hide_attribution', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => false,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_mode', [
+        register_setting('capconnect_settings_group', 'capconnect_mode', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_key',
             'default'           => 'widget',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_background', [
+        register_setting('capconnect_settings_group', 'capconnect_background', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_color', [
+        register_setting('capconnect_settings_group', 'capconnect_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_border_color', [
+        register_setting('capconnect_settings_group', 'capconnect_border_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_checkbox_background', [
+        register_setting('capconnect_settings_group', 'capconnect_checkbox_background', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_spinner_color', [
+        register_setting('capconnect_settings_group', 'capconnect_spinner_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '#374151',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_spinner_background', [
+        register_setting('capconnect_settings_group', 'capconnect_spinner_background', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_checkbox_border_color', [
+        register_setting('capconnect_settings_group', 'capconnect_checkbox_border_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_checkbox_border_style', [
+        register_setting('capconnect_settings_group', 'capconnect_checkbox_border_style', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeBorderStyle'],
             'default'           => 'solid',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_checkbox_border_width', [
+        register_setting('capconnect_settings_group', 'capconnect_checkbox_border_width', [
             'type'              => 'integer',
             'sanitize_callback' => [$this, 'sanitizeBorderWidth'],
             'default'           => 2,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_border_radius', [
+        register_setting('capconnect_settings_group', 'capconnect_border_radius', [
             'type'              => 'integer',
             'sanitize_callback' => [$this, 'sanitizeWidgetBorderRadius'],
             'default'           => 8,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_checkbox_border_radius', [
+        register_setting('capconnect_settings_group', 'capconnect_checkbox_border_radius', [
             'type'              => 'integer',
             'sanitize_callback' => [$this, 'sanitizeCheckboxBorderRadius'],
             'default'           => 5,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_checkbox_checkmark_color', [
+        register_setting('capconnect_settings_group', 'capconnect_checkbox_checkmark_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '#374151',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_error_background', [
+        register_setting('capconnect_settings_group', 'capconnect_error_background', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '#fef2f2',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_error_color', [
+        register_setting('capconnect_settings_group', 'capconnect_error_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '#b91c1c',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_error_border_color', [
+        register_setting('capconnect_settings_group', 'capconnect_error_border_color', [
             'type'              => 'string',
             'sanitize_callback' => [$this, 'sanitizeHexColor'],
             'default'           => '#ef4444',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_login', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_login', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_register', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_register', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_lostpassword', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_lostpassword', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_comments', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_comments', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_woocommerce', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_woocommerce', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_gravityforms', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_gravityforms', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_protect_forminator', [
+        register_setting('capconnect_settings_group', 'capconnect_protect_forminator', [
             'type'              => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
             'default'           => true,
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_initial_state_label', [
+        register_setting('capconnect_settings_group', 'capconnect_initial_state_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_verifying_label', [
+        register_setting('capconnect_settings_group', 'capconnect_verifying_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_solved_label', [
+        register_setting('capconnect_settings_group', 'capconnect_solved_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_required_label', [
+        register_setting('capconnect_settings_group', 'capconnect_required_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_verified_aria_label', [
+        register_setting('capconnect_settings_group', 'capconnect_verified_aria_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_verifying_aria_label', [
+        register_setting('capconnect_settings_group', 'capconnect_verifying_aria_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_verify_aria_label', [
+        register_setting('capconnect_settings_group', 'capconnect_verify_aria_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_error_label', [
+        register_setting('capconnect_settings_group', 'capconnect_error_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_verification_failed_label', [
+        register_setting('capconnect_settings_group', 'capconnect_verification_failed_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_error_aria_label', [
+        register_setting('capconnect_settings_group', 'capconnect_error_aria_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_wasm_disabled_label', [
+        register_setting('capconnect_settings_group', 'capconnect_wasm_disabled_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
-        register_setting('tpow_settings_group', 'tpow_troubleshoot_label', [
+        register_setting('capconnect_settings_group', 'capconnect_troubleshoot_label', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ]);
 
         add_settings_section(
-            'tpow_main_section',
+            'capconnect_main_section',
             __('Cap Instance', 'capconnect-for-wp'),
             null,
-            'tpow-settings'
+            'capconnect-settings'
         );
 
         add_settings_field(
-            'tpow_mode',
+            'capconnect_mode',
             __('Verification Mode', 'capconnect-for-wp'),
             [$this, 'renderModeField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
         add_settings_field(
-            'tpow_instance_url',
+            'capconnect_instance_url',
             __('Instance URL', 'capconnect-for-wp'),
             [$this, 'renderInstanceUrlField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
         add_settings_field(
-            'tpow_site_key',
+            'capconnect_site_key',
             __('Site Key', 'capconnect-for-wp'),
             [$this, 'renderSiteKeyField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
         add_settings_field(
-            'tpow_secret',
+            'capconnect_secret',
             __('Secret Key', 'capconnect-for-wp'),
             [$this, 'renderSecretField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
 
         add_settings_field(
-            'tpow_timeout',
+            'capconnect_timeout',
             __('Timeout (seconds)', 'capconnect-for-wp'),
             [$this, 'renderTimeoutField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
         add_settings_field(
-            'tpow_fail_open',
+            'capconnect_fail_open',
             __('Fail Open', 'capconnect-for-wp'),
             [$this, 'renderFailOpenField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
         add_settings_field(
-            'tpow_alert_email',
+            'capconnect_alert_email',
             __('Alert Email', 'capconnect-for-wp'),
             [$this, 'renderAlertEmailField'],
-            'tpow-settings',
-            'tpow_main_section'
+            'capconnect-settings',
+            'capconnect_main_section'
         );
 
 
 
         add_settings_section(
-            'tpow_forms_section',
+            'capconnect_forms_section',
             __('Form Protection', 'capconnect-for-wp'),
             [$this, 'renderFormsSectionDescription'],
-            'tpow-settings'
+            'capconnect-settings'
         );
 
         add_settings_field(
-            'tpow_protect_login',
+            'capconnect_protect_login',
             __('Login Form', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_login',
+                'field' => 'capconnect_protect_login',
                 'label' => __('Protect the login form', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_protect_register',
+            'capconnect_protect_register',
             __('Registration Form', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_register',
+                'field' => 'capconnect_protect_register',
                 'label' => __('Protect the registration form', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_protect_lostpassword',
+            'capconnect_protect_lostpassword',
             __('Lost Password Form', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_lostpassword',
+                'field' => 'capconnect_protect_lostpassword',
                 'label' => __('Protect the lost password and password reset forms', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_protect_comments',
+            'capconnect_protect_comments',
             __('Comments Form', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_comments',
+                'field' => 'capconnect_protect_comments',
                 'label' => __('Protect the comments form', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_protect_woocommerce',
+            'capconnect_protect_woocommerce',
             __('WooCommerce Checkout', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_woocommerce',
+                'field' => 'capconnect_protect_woocommerce',
                 'label' => __('Protect the WooCommerce checkout form', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_protect_gravityforms',
+            'capconnect_protect_gravityforms',
             __('Gravity Forms', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_gravityforms',
+                'field' => 'capconnect_protect_gravityforms',
                 'label' => __('Protect Gravity Forms submissions', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_protect_forminator',
+            'capconnect_protect_forminator',
             __('Forminator Forms', 'capconnect-for-wp'),
             [$this, 'renderCheckboxField'],
-            'tpow-settings',
-            'tpow_forms_section',
+            'capconnect-settings',
+            'capconnect_forms_section',
             [
-                'field' => 'tpow_protect_forminator',
+                'field' => 'capconnect_protect_forminator',
                 'label' => __('Protect Forminator Forms submissions', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_section(
-            'tpow_styling_section',
+            'capconnect_styling_section',
             __('Custom Styling', 'capconnect-for-wp'),
             [$this, 'renderStylingSectionDescription'],
-            'tpow-settings'
+            'capconnect-settings'
         );
 
         add_settings_field(
-            'tpow_widget_styles',
+            'capconnect_widget_styles',
             __('Widget Container Styles', 'capconnect-for-wp'),
             [$this, 'renderWidgetStylesField'],
-            'tpow-settings',
-            'tpow_styling_section',
+            'capconnect-settings',
+            'capconnect_styling_section',
             [
-                'class' => 'tpow-styling-field',
+                'class' => 'capconnect-styling-field',
             ]
         );
 
         add_settings_field(
-            'tpow_checkbox_styles',
+            'capconnect_checkbox_styles',
             __('Checkbox Styles', 'capconnect-for-wp'),
             [$this, 'renderCheckboxStylesField'],
-            'tpow-settings',
-            'tpow_styling_section',
+            'capconnect-settings',
+            'capconnect_styling_section',
             [
-                'class' => 'tpow-styling-field',
+                'class' => 'capconnect-styling-field',
             ]
         );
 
         add_settings_field(
-            'tpow_spinner_styles',
+            'capconnect_spinner_styles',
             __('Spinner Styles', 'capconnect-for-wp'),
             [$this, 'renderSpinnerStylesField'],
-            'tpow-settings',
-            'tpow_styling_section',
+            'capconnect-settings',
+            'capconnect_styling_section',
             [
-                'class' => 'tpow-styling-field',
+                'class' => 'capconnect-styling-field',
             ]
         );
 
         add_settings_field(
-            'tpow_error_styles',
+            'capconnect_error_styles',
             __('Error Message Styles', 'capconnect-for-wp'),
             [$this, 'renderErrorStylesField'],
-            'tpow-settings',
-            'tpow_styling_section',
+            'capconnect-settings',
+            'capconnect_styling_section',
             [
-                'class' => 'tpow-styling-field',
+                'class' => 'capconnect-styling-field',
             ]
         );
 
         add_settings_field(
-            'tpow_hide_attribution',
+            'capconnect_hide_attribution',
             __('Hide Attribution Link', 'capconnect-for-wp'),
             [$this, 'renderHideAttributionField'],
-            'tpow-settings',
-            'tpow_styling_section'
+            'capconnect-settings',
+            'capconnect_styling_section'
         );
 
         add_settings_section(
-            'tpow_labels_section',
+            'capconnect_labels_section',
             __('Widget Labels & Translations', 'capconnect-for-wp'),
             [$this, 'renderLabelsSectionDescription'],
-            'tpow-settings'
+            'capconnect-settings'
         );
 
         add_settings_field(
-            'tpow_initial_state_label',
+            'capconnect_initial_state_label',
             __('Initial Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_initial_state_label',
+                'field'       => 'capconnect_initial_state_label',
                 'placeholder' => __("Verify you're human", 'capconnect-for-wp'),
                 'description' => __('The initial text displayed on the widget.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_verifying_label',
+            'capconnect_verifying_label',
             __('Verifying Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_verifying_label',
+                'field'       => 'capconnect_verifying_label',
                 'placeholder' => __('Verifying...', 'capconnect-for-wp'),
                 'description' => __('Text shown while the verification challenge is running.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_solved_label',
+            'capconnect_solved_label',
             __('Solved Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_solved_label',
+                'field'       => 'capconnect_solved_label',
                 'placeholder' => __("You're a human", 'capconnect-for-wp'),
                 'description' => __('Text shown when verification is completed successfully.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_required_label',
+            'capconnect_required_label',
             __('Required Field Error Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_required_label',
+                'field'       => 'capconnect_required_label',
                 'placeholder' => __("Please verify you're human", 'capconnect-for-wp'),
                 'description' => __('HTML5 validation error message shown if form is submitted without solving the widget.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_verified_aria_label',
+            'capconnect_verified_aria_label',
             __('Solved Accessibility Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_verified_aria_label',
+                'field'       => 'capconnect_verified_aria_label',
                 'placeholder' => __("We have verified you're a human, you may now continue", 'capconnect-for-wp'),
                 'description' => __('Accessibility/ARIA screen-reader message read when verification is successfully completed.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_verifying_aria_label',
+            'capconnect_verifying_aria_label',
             __('Verifying Accessibility Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_verifying_aria_label',
+                'field'       => 'capconnect_verifying_aria_label',
                 'placeholder' => __("Verifying you're a human, please wait", 'capconnect-for-wp'),
                 'description' => __('Accessibility/ARIA screen-reader message read when verification starts.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_verify_aria_label',
+            'capconnect_verify_aria_label',
             __('Action Accessibility Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_verify_aria_label',
+                'field'       => 'capconnect_verify_aria_label',
                 'placeholder' => __("Click to verify you're a human", 'capconnect-for-wp'),
                 'description' => __('Accessibility/ARIA screen-reader description for the click target button.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_error_label',
+            'capconnect_error_label',
             __('Error Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_error_label',
+                'field'       => 'capconnect_error_label',
                 'placeholder' => __('Error', 'capconnect-for-wp'),
                 'description' => __('General error text shown in the widget when verification fails.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_verification_failed_label',
+            'capconnect_verification_failed_label',
             __('Verification Failed Error Message', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_verification_failed_label',
+                'field'       => 'capconnect_verification_failed_label',
                 'placeholder' => __('Captcha verification failed', 'capconnect-for-wp'),
                 'description' => __('Error message displayed on submission when captcha verification fails.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_error_aria_label',
+            'capconnect_error_aria_label',
             __('Error Accessibility Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_error_aria_label',
+                'field'       => 'capconnect_error_aria_label',
                 'placeholder' => __('An error occurred, please try again', 'capconnect-for-wp'),
                 'description' => __('Accessibility/ARIA screen-reader error message read when verification fails.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_wasm_disabled_label',
+            'capconnect_wasm_disabled_label',
             __('WASM Warning Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_wasm_disabled_label',
+                'field'       => 'capconnect_wasm_disabled_label',
                 'placeholder' => __('Enable WASM for significantly faster solving', 'capconnect-for-wp'),
                 'description' => __('Warning message shown to users who have WebAssembly disabled in their browser.', 'capconnect-for-wp'),
             ]
         );
 
         add_settings_field(
-            'tpow_troubleshoot_label',
+            'capconnect_troubleshoot_label',
             __('Troubleshooting Link Label', 'capconnect-for-wp'),
             [$this, 'renderLabelField'],
-            'tpow-settings',
-            'tpow_labels_section',
+            'capconnect-settings',
+            'capconnect_labels_section',
             [
-                'field'       => 'tpow_troubleshoot_label',
+                'field'       => 'capconnect_troubleshoot_label',
                 'placeholder' => __('Troubleshoot', 'capconnect-for-wp'),
                 'description' => __('The text for the troubleshooting guide link displayed when verification fails.', 'capconnect-for-wp'),
             ]
@@ -853,108 +919,108 @@ class Tpow_Settings
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
             <style>
-                .tpow-nav-tab-wrapper {
+                .capconnect-nav-tab-wrapper {
                     margin-bottom: 20px;
                 }
-                .tpow-nav-tab-wrapper .nav-tab {
+                .capconnect-nav-tab-wrapper .nav-tab {
                     cursor: pointer;
                     user-select: none;
                 }
-                .tpow-tab-content {
+                .capconnect-tab-content {
                     background: #fff;
                     border: 1px solid #ccd0d4;
                     border-top: none;
                     padding: 20px;
                     box-shadow: 0 1px 1px rgba(0,0,0,.04);
                 }
-                .tpow-test-connection-wrapper {
+                .capconnect-test-connection-wrapper {
                     margin-top: 30px;
                     padding-top: 20px;
                     border-top: 1px solid #ccd0d4;
                 }
-                .tpow-submit-wrapper {
+                .capconnect-submit-wrapper {
                     margin-top: 20px;
                     padding: 0;
                 }
             </style>
 
-            <h2 class="nav-tab-wrapper tpow-nav-tab-wrapper">
+            <h2 class="nav-tab-wrapper capconnect-nav-tab-wrapper">
                 <a href="#connection" class="nav-tab nav-tab-active" data-tab="connection"><?php esc_html_e('Connection', 'capconnect-for-wp'); ?></a>
                 <a href="#forms" class="nav-tab" data-tab="forms"><?php esc_html_e('Forms', 'capconnect-for-wp'); ?></a>
                 <a href="#styling" class="nav-tab" data-tab="styling"><?php esc_html_e('Styling', 'capconnect-for-wp'); ?></a>
                 <a href="#labels" class="nav-tab" data-tab="labels"><?php esc_html_e('Labels', 'capconnect-for-wp'); ?></a>
             </h2>
 
-            <form id="tpow-settings-form" method="post" action="options.php">
-                <?php settings_fields('tpow_settings_group'); ?>
-                <input type="hidden" name="tpow_current_edit_locale" value="<?php echo esc_attr(self::getCurrentLanguage()); ?>" />
+            <form id="capconnect-settings-form" method="post" action="options.php">
+                <?php settings_fields('capconnect_settings_group'); ?>
+                <input type="hidden" name="capconnect_current_edit_locale" value="<?php echo esc_attr(self::getCurrentLanguage()); ?>" />
 
                 <!-- Connection Tab -->
-                <div id="tpow-tab-connection" class="tpow-tab-content">
-                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_main_section'); ?>
+                <div id="capconnect-tab-connection" class="capconnect-tab-content">
+                    <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_main_section'); ?>
                     
-                    <div class="tpow-test-connection-wrapper">
+                    <div class="capconnect-test-connection-wrapper">
                         <h2><?php esc_html_e('Test Connection', 'capconnect-for-wp'); ?></h2>
                         <p><?php esc_html_e('Checks the currently entered Instance URL, Site Key, and Secret Key before you save them.', 'capconnect-for-wp'); ?></p>
-                        <button type="button" id="tpow-test-btn" class="button button-secondary">
+                        <button type="button" id="capconnect-test-btn" class="button button-secondary">
                             <?php esc_html_e('Test connection', 'capconnect-for-wp'); ?>
                         </button>
-                        <span id="tpow-test-result" style="margin-left:10px;line-height:30px;vertical-align:middle;"></span>
+                        <span id="capconnect-test-result" style="margin-left:10px;line-height:30px;vertical-align:middle;"></span>
                     </div>
                 </div>
 
                 <!-- Forms Tab -->
-                <div id="tpow-tab-forms" class="tpow-tab-content" style="display: none;">
-                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_forms_section'); ?>
+                <div id="capconnect-tab-forms" class="capconnect-tab-content" style="display: none;">
+                    <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_forms_section'); ?>
                 </div>
 
                 <!-- Styling Tab -->
-                <div id="tpow-tab-styling" class="tpow-tab-content" style="display: none;">
-                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_styling_section'); ?>
+                <div id="capconnect-tab-styling" class="capconnect-tab-content" style="display: none;">
+                    <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_styling_section'); ?>
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccd0d4;">
-                        <button type="button" id="tpow-reset-styles-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
+                        <button type="button" id="capconnect-reset-styles-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
                             <?php esc_html_e('Reset Style Settings', 'capconnect-for-wp'); ?>
                         </button>
                     </div>
                 </div>
 
                 <!-- Labels Tab -->
-                <div id="tpow-tab-labels" class="tpow-tab-content" style="display: none;">
-                    <?php $this->renderSettingsSection('tpow-settings', 'tpow_labels_section'); ?>
+                <div id="capconnect-tab-labels" class="capconnect-tab-content" style="display: none;">
+                    <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_labels_section'); ?>
                 </div>
 
-                <div class="tpow-submit-wrapper">
+                <div class="capconnect-submit-wrapper">
                     <p class="submit" style="display: flex; align-items: center; gap: 16px;">
                         <?php submit_button(__('Save Settings', 'capconnect-for-wp'), 'primary', 'submit', false); ?>
-                        <button type="button" id="tpow-reset-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
+                        <button type="button" id="capconnect-reset-trigger-btn" class="button button-secondary" style="text-decoration: none; color: #b32d2e; border-color: #b32d2e;">
                             <?php esc_html_e('Reset All Settings', 'capconnect-for-wp'); ?>
                         </button>
                     </p>
                 </div>
             </form>
 
-            <form id="tpow-reset-form" method="post" action="" style="display:none;">
-                <?php wp_nonce_field('tpow_reset_settings_nonce', 'tpow_reset_nonce'); ?>
-                <input type="hidden" name="tpow_reset_settings" value="1" />
+            <form id="capconnect-reset-form" method="post" action="" style="display:none;">
+                <?php wp_nonce_field('capconnect_reset_settings_nonce', 'capconnect_reset_nonce'); ?>
+                <input type="hidden" name="capconnect_reset_settings" value="1" />
             </form>
 
-            <form id="tpow-reset-styles-form" method="post" action="" style="display:none;">
-                <?php wp_nonce_field('tpow_reset_style_settings_nonce', 'tpow_reset_style_nonce'); ?>
-                <input type="hidden" name="tpow_reset_style_settings" value="1" />
+            <form id="capconnect-reset-styles-form" method="post" action="" style="display:none;">
+                <?php wp_nonce_field('capconnect_reset_style_settings_nonce', 'capconnect_reset_style_nonce'); ?>
+                <input type="hidden" name="capconnect_reset_style_settings" value="1" />
             </form>
 
             <script>
             (function () {
-                var nonce = <?php echo wp_json_encode(wp_create_nonce('tpow_test_connection')); ?>;
-                var btn    = document.getElementById('tpow-test-btn');
-                var result = document.getElementById('tpow-test-result');
-                var settingsForm = document.getElementById('tpow-settings-form');
-                var loginProtection = settingsForm.querySelector('input[name="tpow_protect_login"]');
-                var initialLoginProtection = <?php echo wp_json_encode((bool) get_option('tpow_protect_login', true)); ?>;
+                var nonce = <?php echo wp_json_encode(wp_create_nonce('capconnect_test_connection')); ?>;
+                var btn    = document.getElementById('capconnect-test-btn');
+                var result = document.getElementById('capconnect-test-result');
+                var settingsForm = document.getElementById('capconnect-settings-form');
+                var loginProtection = settingsForm.querySelector('input[name="capconnect_protect_login"]');
+                var initialLoginProtection = <?php echo wp_json_encode((bool) get_option('capconnect_protect_login', true)); ?>;
                 var initialCredentials = {
-                    instanceUrl: <?php echo wp_json_encode((string) get_option('tpow_instance_url', '')); ?>,
-                    siteKey: <?php echo wp_json_encode((string) get_option('tpow_site_key', '')); ?>,
-                    secret: <?php echo wp_json_encode((string) get_option('tpow_secret', '')); ?>
+                    instanceUrl: <?php echo wp_json_encode((string) get_option('capconnect_instance_url', '')); ?>,
+                    siteKey: <?php echo wp_json_encode((string) get_option('capconnect_site_key', '')); ?>,
+                    secret: <?php echo wp_json_encode((string) get_option('capconnect_secret', '')); ?>
                 };
                 var testedCredentials = null;
 
@@ -963,9 +1029,9 @@ class Tpow_Settings
                  */
                 function getCredentials() {
                     return {
-                        instanceUrl: settingsForm.querySelector('input[name="tpow_instance_url"]').value,
-                        siteKey: settingsForm.querySelector('input[name="tpow_site_key"]').value,
-                        secret: settingsForm.querySelector('input[name="tpow_secret"]').value
+                        instanceUrl: settingsForm.querySelector('input[name="capconnect_instance_url"]').value,
+                        siteKey: settingsForm.querySelector('input[name="capconnect_site_key"]').value,
+                        secret: settingsForm.querySelector('input[name="capconnect_secret"]').value
                     };
                 }
 
@@ -983,7 +1049,7 @@ class Tpow_Settings
 
                     var credentials = getCredentials();
 
-                    var body = 'action=tpow_test_connection&nonce=' + encodeURIComponent(nonce) +
+                    var body = 'action=capconnect_test_connection&nonce=' + encodeURIComponent(nonce) +
                                '&instance_url=' + encodeURIComponent(credentials.instanceUrl) +
                                '&site_key=' + encodeURIComponent(credentials.siteKey) +
                                '&secret=' + encodeURIComponent(credentials.secret);
@@ -1026,8 +1092,8 @@ class Tpow_Settings
             <script>
             jQuery(function ($) {
                 // Tab switching logic
-                var $tabs = $('.tpow-nav-tab-wrapper .nav-tab');
-                var $tabContents = $('.tpow-tab-content');
+                var $tabs = $('.capconnect-nav-tab-wrapper .nav-tab');
+                var $tabContents = $('.capconnect-tab-content');
 
                 function switchTab(tabId) {
                     // Update active tab header class
@@ -1036,10 +1102,10 @@ class Tpow_Settings
 
                     // Show corresponding content, hide others
                     $tabContents.hide();
-                    $('#tpow-tab-' + tabId).show();
+                    $('#capconnect-tab-' + tabId).show();
 
                     // Save state to sessionStorage & update window hash
-                    sessionStorage.setItem('tpow_active_tab', tabId);
+                    sessionStorage.setItem('capconnect_active_tab', tabId);
                     window.location.hash = tabId;
                 }
 
@@ -1052,29 +1118,29 @@ class Tpow_Settings
                 // Determine initial tab on page load
                 var initialTab = 'connection';
                 var hash = window.location.hash.substring(1);
-                var storedTab = sessionStorage.getItem('tpow_active_tab');
+                var storedTab = sessionStorage.getItem('capconnect_active_tab');
 
-                if (hash && $('#tpow-tab-' + hash).length) {
+                if (hash && $('#capconnect-tab-' + hash).length) {
                     initialTab = hash;
-                } else if (storedTab && $('#tpow-tab-' + storedTab).length) {
+                } else if (storedTab && $('#capconnect-tab-' + storedTab).length) {
                     initialTab = storedTab;
                 }
 
                 switchTab(initialTab);
 
                 // Reset confirmation
-                $('#tpow-reset-trigger-btn').on('click', function (e) {
+                $('#capconnect-reset-trigger-btn').on('click', function (e) {
                     e.preventDefault();
                     if (confirm('<?php echo esc_js(__('Are you sure you want to reset all settings? This will clear all configuration and styles.', 'capconnect-for-wp')); ?>')) {
-                        $('#tpow-reset-form').submit();
+                        $('#capconnect-reset-form').submit();
                     }
                 });
 
                 // Reset styles confirmation
-                $('#tpow-reset-styles-trigger-btn').on('click', function (e) {
+                $('#capconnect-reset-styles-trigger-btn').on('click', function (e) {
                     e.preventDefault();
                     if (confirm('<?php echo esc_js(__('Are you sure you want to reset all style settings to defaults?', 'capconnect-for-wp')); ?>')) {
-                        $('#tpow-reset-styles-form').submit();
+                        $('#capconnect-reset-styles-form').submit();
                     }
                 });
             });
@@ -1085,8 +1151,8 @@ class Tpow_Settings
 
     public function renderModeField(): void
     {
-        $value = (string) get_option('tpow_mode', 'widget');
-        echo '<select name="tpow_mode">';
+        $value = (string) get_option('capconnect_mode', 'widget');
+        echo '<select name="capconnect_mode">';
         echo '<option value="widget"' . selected($value, 'widget', false) . '>' . esc_html__('Widget (visible)', 'capconnect-for-wp') . '</option>';
         echo '<option value="programmatic"' . selected($value, 'programmatic', false) . '>' . esc_html__('Programmatic (invisible)', 'capconnect-for-wp') . '</option>';
         echo '</select>';
@@ -1095,37 +1161,37 @@ class Tpow_Settings
 
     public function renderInstanceUrlField(): void
     {
-        $value = get_option('tpow_instance_url', '');
-        echo '<input type="url" name="tpow_instance_url" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com" />';
+        $value = get_option('capconnect_instance_url', '');
+        echo '<input type="url" name="capconnect_instance_url" value="' . esc_attr($value) . '" class="regular-text" placeholder="https://cap.example.com" />';
         echo '<p class="description">' . esc_html__('Your Cap Standalone server URL, e.g. https://cap.example.com', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderSiteKeyField(): void
     {
-        $value = get_option('tpow_site_key', '');
-        echo '<input type="text" name="tpow_site_key" value="' . esc_attr($value) . '" class="regular-text" />';
+        $value = get_option('capconnect_site_key', '');
+        echo '<input type="text" name="capconnect_site_key" value="' . esc_attr($value) . '" class="regular-text" />';
         echo '<p class="description">' . esc_html__('The site key from your Cap dashboard.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderSecretField(): void
     {
-        $value = get_option('tpow_secret', '');
-        echo '<input type="password" name="tpow_secret" value="' . esc_attr($value) . '" class="regular-text" />';
+        $value = get_option('capconnect_secret', '');
+        echo '<input type="password" name="capconnect_secret" value="' . esc_attr($value) . '" class="regular-text" />';
         echo '<p class="description">' . esc_html__('The secret key from your Cap dashboard. Never expose this publicly.', 'capconnect-for-wp') . '</p>';
     }
 
 
     public function renderTimeoutField(): void
     {
-        $value = (int) get_option('tpow_timeout', 5);
-        echo '<input type="number" name="tpow_timeout" value="' . esc_attr((string) $value) . '" min="1" max="30" class="small-text" />';
+        $value = (int) get_option('capconnect_timeout', 5);
+        echo '<input type="number" name="capconnect_timeout" value="' . esc_attr((string) $value) . '" min="1" max="30" class="small-text" />';
         echo '<p class="description">' . esc_html__('Seconds before abandoning the request to /siteverify.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderFailOpenField(): void
     {
-        $value = (bool) get_option('tpow_fail_open', false);
-        echo '<label><input type="checkbox" name="tpow_fail_open" value="1"' . checked($value, true, false) . ' /> ';
+        $value = (bool) get_option('capconnect_fail_open', false);
+        echo '<label><input type="checkbox" name="capconnect_fail_open" value="1"' . checked($value, true, false) . ' /> ';
         echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'capconnect-for-wp') . '</label>';
     }
 
@@ -1134,16 +1200,16 @@ class Tpow_Settings
      */
     public function renderAlertEmailField(): void
     {
-        $value = get_option('tpow_alert_email', '');
-        echo '<input type="email" name="tpow_alert_email" value="' . esc_attr($value) . '" class="regular-text" placeholder="admin@example.com" />';
+        $value = get_option('capconnect_alert_email', '');
+        echo '<input type="email" name="capconnect_alert_email" value="' . esc_attr($value) . '" class="regular-text" placeholder="admin@example.com" />';
         echo '<p class="description">' . esc_html__('Get notified by email if the connection to your Cap server fails (either during the hourly check or on a frontend verification attempt). Leave empty to disable alerts.', 'capconnect-for-wp') . '</p>';
         echo '<p class="description">' . esc_html__('Login recovery emails are sent separately to the email address stored on the requested administrator account. Recovery requires working WordPress email delivery.', 'capconnect-for-wp') . '</p>';
     }
 
     public function renderHideAttributionField(): void
     {
-        $value = (bool) get_option('tpow_hide_attribution', false);
-        echo '<label><input type="checkbox" name="tpow_hide_attribution" value="1"' . checked($value, true, false) . ' /> ';
+        $value = (bool) get_option('capconnect_hide_attribution', false);
+        echo '<label><input type="checkbox" name="capconnect_hide_attribution" value="1"' . checked($value, true, false) . ' /> ';
         echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'capconnect-for-wp') . '</label>';
     }
 
@@ -1160,11 +1226,11 @@ class Tpow_Settings
 
         $disabled = false;
 
-        if ($field === 'tpow_protect_woocommerce' && ! class_exists('WooCommerce')) {
+        if ($field === 'capconnect_protect_woocommerce' && ! class_exists('WooCommerce')) {
             $disabled = true;
-        } elseif ($field === 'tpow_protect_gravityforms' && ! class_exists('GFForms')) {
+        } elseif ($field === 'capconnect_protect_gravityforms' && ! class_exists('GFForms')) {
             $disabled = true;
-        } elseif ($field === 'tpow_protect_forminator' && ! class_exists('Forminator')) {
+        } elseif ($field === 'capconnect_protect_forminator' && ! class_exists('Forminator')) {
             $disabled = true;
         }
 
@@ -1183,7 +1249,7 @@ class Tpow_Settings
         wp_enqueue_script('wp-color-picker');
         wp_add_inline_script(
             'wp-color-picker',
-            'jQuery(function($){ $(".tpow-color-picker").wpColorPicker(); });'
+            'jQuery(function($){ $(".capconnect-color-picker").wpColorPicker(); });'
         );
 
         $custom_css = '
@@ -1198,32 +1264,32 @@ class Tpow_Settings
 
     public function renderStylingSectionDescription(): void
     {
-        echo '<div id="tpow-styling-section-desc"></div>';
+        echo '<div id="capconnect-styling-section-desc"></div>';
     }
 
     public function renderWidgetStylesField(): void
     {
-        $bg = get_option('tpow_background', '');
-        $color = get_option('tpow_color', '');
-        $border = get_option('tpow_border_color', '');
-        $radius = get_option('tpow_border_radius', 8);
+        $bg = get_option('capconnect_background', '');
+        $color = get_option('capconnect_color', '');
+        $border = get_option('capconnect_border_color', '');
+        $radius = get_option('capconnect_border_radius', 8);
         ?>
         <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Background Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_background" value="<?php echo esc_attr($bg); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_background" value="<?php echo esc_attr($bg); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Text Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_color" value="<?php echo esc_attr($color); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_color" value="<?php echo esc_attr($color); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_border_color" value="<?php echo esc_attr($border); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_border_color" value="<?php echo esc_attr($border); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Radius (px)', 'capconnect-for-wp'); ?></label>
-                <input type="number" name="tpow_border_radius" value="<?php echo esc_attr((string) $radius); ?>" min="0" max="100" class="small-text" />
+                <input type="number" name="capconnect_border_radius" value="<?php echo esc_attr((string) $radius); ?>" min="0" max="100" class="small-text" />
             </div>
         </div>
         <?php
@@ -1231,30 +1297,30 @@ class Tpow_Settings
 
     public function renderCheckboxStylesField(): void
     {
-        $bg = get_option('tpow_checkbox_background', '');
-        $checkmark = get_option('tpow_checkbox_checkmark_color', '#374151');
-        $color = get_option('tpow_checkbox_border_color', '');
-        $style = get_option('tpow_checkbox_border_style', 'solid');
-        $width = get_option('tpow_checkbox_border_width', 2);
-        $radius = get_option('tpow_checkbox_border_radius', 5);
+        $bg = get_option('capconnect_checkbox_background', '');
+        $checkmark = get_option('capconnect_checkbox_checkmark_color', '#374151');
+        $color = get_option('capconnect_checkbox_border_color', '');
+        $style = get_option('capconnect_checkbox_border_style', 'solid');
+        $width = get_option('capconnect_checkbox_border_width', 2);
+        $radius = get_option('capconnect_checkbox_border_radius', 5);
         ?>
         <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Checkbox Background', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_checkbox_background" value="<?php echo esc_attr($bg); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_checkbox_background" value="<?php echo esc_attr($bg); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Checkmark Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_checkbox_checkmark_color" value="<?php echo esc_attr($checkmark); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_checkbox_checkmark_color" value="<?php echo esc_attr($checkmark); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
             <div style="border-left: 1px solid #ccc; padding-left: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <div>
                     <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Color', 'capconnect-for-wp'); ?></label>
-                    <input type="text" name="tpow_checkbox_border_color" value="<?php echo esc_attr($color); ?>" class="tpow-color-picker" data-default-color="" />
+                    <input type="text" name="capconnect_checkbox_border_color" value="<?php echo esc_attr($color); ?>" class="capconnect-color-picker" data-default-color="" />
                 </div>
                 <div>
                     <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Style', 'capconnect-for-wp'); ?></label>
-                    <select name="tpow_checkbox_border_style">
+                    <select name="capconnect_checkbox_border_style">
                         <?php
                         $styles = ['solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset', 'none'];
                         foreach ($styles as $s) {
@@ -1265,12 +1331,12 @@ class Tpow_Settings
                 </div>
                 <div>
                     <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Width (px)', 'capconnect-for-wp'); ?></label>
-                    <input type="number" name="tpow_checkbox_border_width" value="<?php echo esc_attr((string) $width); ?>" min="0" max="20" class="small-text" />
+                    <input type="number" name="capconnect_checkbox_border_width" value="<?php echo esc_attr((string) $width); ?>" min="0" max="20" class="small-text" />
                 </div>
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Checkbox Border Radius (px)', 'capconnect-for-wp'); ?></label>
-                <input type="number" name="tpow_checkbox_border_radius" value="<?php echo esc_attr((string) $radius); ?>" min="0" max="50" class="small-text" />
+                <input type="number" name="capconnect_checkbox_border_radius" value="<?php echo esc_attr((string) $radius); ?>" min="0" max="50" class="small-text" />
             </div>
         </div>
         <?php
@@ -1278,17 +1344,17 @@ class Tpow_Settings
 
     public function renderSpinnerStylesField(): void
     {
-        $bg = get_option('tpow_spinner_background', '');
-        $color = get_option('tpow_spinner_color', '#374151');
+        $bg = get_option('capconnect_spinner_background', '');
+        $color = get_option('capconnect_spinner_color', '#374151');
         ?>
         <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Spinner Background Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_spinner_background" value="<?php echo esc_attr($bg); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_spinner_background" value="<?php echo esc_attr($bg); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Spinner Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_spinner_color" value="<?php echo esc_attr($color); ?>" class="tpow-color-picker" data-default-color="" />
+                <input type="text" name="capconnect_spinner_color" value="<?php echo esc_attr($color); ?>" class="capconnect-color-picker" data-default-color="" />
             </div>
         </div>
         <?php
@@ -1299,22 +1365,22 @@ class Tpow_Settings
      */
     public function renderErrorStylesField(): void
     {
-        $background = get_option('tpow_error_background', '#fef2f2');
-        $color = get_option('tpow_error_color', '#b91c1c');
-        $border = get_option('tpow_error_border_color', '#ef4444');
+        $background = get_option('capconnect_error_background', '#fef2f2');
+        $color = get_option('capconnect_error_color', '#b91c1c');
+        $border = get_option('capconnect_error_border_color', '#ef4444');
         ?>
         <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Background Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_error_background" value="<?php echo esc_attr($background); ?>" class="tpow-color-picker" data-default-color="#fef2f2" />
+                <input type="text" name="capconnect_error_background" value="<?php echo esc_attr($background); ?>" class="capconnect-color-picker" data-default-color="#fef2f2" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Text Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_error_color" value="<?php echo esc_attr($color); ?>" class="tpow-color-picker" data-default-color="#b91c1c" />
+                <input type="text" name="capconnect_error_color" value="<?php echo esc_attr($color); ?>" class="capconnect-color-picker" data-default-color="#b91c1c" />
             </div>
             <div>
                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px;"><?php esc_html_e('Border Color', 'capconnect-for-wp'); ?></label>
-                <input type="text" name="tpow_error_border_color" value="<?php echo esc_attr($border); ?>" class="tpow-color-picker" data-default-color="#ef4444" />
+                <input type="text" name="capconnect_error_border_color" value="<?php echo esc_attr($border); ?>" class="capconnect-color-picker" data-default-color="#ef4444" />
             </div>
         </div>
         <?php
@@ -1364,132 +1430,132 @@ class Tpow_Settings
 
     public function handleResetSettings(): void
     {
-        if (! isset($_POST['tpow_reset_settings'])) {
+        if (! isset($_POST['capconnect_reset_settings'])) {
             return;
         }
 
-        check_admin_referer('tpow_reset_settings_nonce', 'tpow_reset_nonce');
+        check_admin_referer('capconnect_reset_settings_nonce', 'capconnect_reset_nonce');
 
         if (! current_user_can('manage_options')) {
             wp_die(__('Unauthorized.', 'capconnect-for-wp'));
         }
 
         $options_to_delete = [
-            'tpow_instance_url',
-            'tpow_site_key',
-            'tpow_secret',
-            'tpow_timeout',
-            'tpow_fail_open',
-            'tpow_alert_email',
-            'tpow_alert_sent',
-            'tpow_connection_failed_notice',
-            'tpow_hide_attribution',
-            'tpow_mode',
-            'tpow_background',
-            'tpow_color',
-            'tpow_border_color',
-            'tpow_border_radius',
-            'tpow_checkbox_background',
-            'tpow_checkbox_checkmark_color',
-            'tpow_checkbox_border_color',
-            'tpow_checkbox_border_style',
-            'tpow_checkbox_border_width',
-            'tpow_checkbox_border_radius',
-            'tpow_spinner_color',
-            'tpow_spinner_background',
-            'tpow_error_background',
-            'tpow_error_color',
-            'tpow_error_border_color',
-            'tpow_protect_login',
-            'tpow_protect_register',
-            'tpow_protect_lostpassword',
-            'tpow_protect_comments',
-            'tpow_protect_woocommerce',
-            'tpow_protect_gravityforms',
-            'tpow_protect_forminator',
-            'tpow_initial_state_label',
-            'tpow_initial_state_label_translations',
-            'tpow_verifying_label',
-            'tpow_verifying_label_translations',
-            'tpow_solved_label',
-            'tpow_solved_label_translations',
-            'tpow_required_label',
-            'tpow_required_label_translations',
-            'tpow_verified_aria_label',
-            'tpow_verified_aria_label_translations',
-            'tpow_verifying_aria_label',
-            'tpow_verifying_aria_label_translations',
-            'tpow_verify_aria_label',
-            'tpow_verify_aria_label_translations',
-            'tpow_error_label',
-            'tpow_error_label_translations',
-            'tpow_verification_failed_label',
-            'tpow_verification_failed_label_translations',
-            'tpow_error_aria_label',
-            'tpow_error_aria_label_translations',
-            'tpow_wasm_disabled_label',
-            'tpow_wasm_disabled_label_translations',
-            'tpow_troubleshoot_label',
-            'tpow_troubleshoot_label_translations',
+            'capconnect_instance_url',
+            'capconnect_site_key',
+            'capconnect_secret',
+            'capconnect_timeout',
+            'capconnect_fail_open',
+            'capconnect_alert_email',
+            'capconnect_alert_sent',
+            'capconnect_connection_failed_notice',
+            'capconnect_hide_attribution',
+            'capconnect_mode',
+            'capconnect_background',
+            'capconnect_color',
+            'capconnect_border_color',
+            'capconnect_border_radius',
+            'capconnect_checkbox_background',
+            'capconnect_checkbox_checkmark_color',
+            'capconnect_checkbox_border_color',
+            'capconnect_checkbox_border_style',
+            'capconnect_checkbox_border_width',
+            'capconnect_checkbox_border_radius',
+            'capconnect_spinner_color',
+            'capconnect_spinner_background',
+            'capconnect_error_background',
+            'capconnect_error_color',
+            'capconnect_error_border_color',
+            'capconnect_protect_login',
+            'capconnect_protect_register',
+            'capconnect_protect_lostpassword',
+            'capconnect_protect_comments',
+            'capconnect_protect_woocommerce',
+            'capconnect_protect_gravityforms',
+            'capconnect_protect_forminator',
+            'capconnect_initial_state_label',
+            'capconnect_initial_state_label_translations',
+            'capconnect_verifying_label',
+            'capconnect_verifying_label_translations',
+            'capconnect_solved_label',
+            'capconnect_solved_label_translations',
+            'capconnect_required_label',
+            'capconnect_required_label_translations',
+            'capconnect_verified_aria_label',
+            'capconnect_verified_aria_label_translations',
+            'capconnect_verifying_aria_label',
+            'capconnect_verifying_aria_label_translations',
+            'capconnect_verify_aria_label',
+            'capconnect_verify_aria_label_translations',
+            'capconnect_error_label',
+            'capconnect_error_label_translations',
+            'capconnect_verification_failed_label',
+            'capconnect_verification_failed_label_translations',
+            'capconnect_error_aria_label',
+            'capconnect_error_aria_label_translations',
+            'capconnect_wasm_disabled_label',
+            'capconnect_wasm_disabled_label_translations',
+            'capconnect_troubleshoot_label',
+            'capconnect_troubleshoot_label_translations',
         ];
 
         foreach ($options_to_delete as $opt) {
             delete_option($opt);
         }
 
-        wp_safe_redirect(add_query_arg('settings-updated', 'reset', admin_url('options-general.php?page=tpow-settings')));
+        wp_safe_redirect(add_query_arg('settings-updated', 'reset', admin_url('options-general.php?page=capconnect-settings')));
         exit;
     }
 
     public function handleResetStyleSettings(): void
     {
-        if (! isset($_POST['tpow_reset_style_settings'])) {
+        if (! isset($_POST['capconnect_reset_style_settings'])) {
             return;
         }
 
-        check_admin_referer('tpow_reset_style_settings_nonce', 'tpow_reset_style_nonce');
+        check_admin_referer('capconnect_reset_style_settings_nonce', 'capconnect_reset_style_nonce');
 
         if (! current_user_can('manage_options')) {
             wp_die(__('Unauthorized.', 'capconnect-for-wp'));
         }
 
         $options_to_delete = [
-            'tpow_background',
-            'tpow_color',
-            'tpow_border_color',
-            'tpow_border_radius',
-            'tpow_checkbox_background',
-            'tpow_checkbox_checkmark_color',
-            'tpow_checkbox_border_color',
-            'tpow_checkbox_border_style',
-            'tpow_checkbox_border_width',
-            'tpow_checkbox_border_radius',
-            'tpow_spinner_color',
-            'tpow_spinner_background',
-            'tpow_error_background',
-            'tpow_error_color',
-            'tpow_error_border_color',
-            'tpow_hide_attribution',
+            'capconnect_background',
+            'capconnect_color',
+            'capconnect_border_color',
+            'capconnect_border_radius',
+            'capconnect_checkbox_background',
+            'capconnect_checkbox_checkmark_color',
+            'capconnect_checkbox_border_color',
+            'capconnect_checkbox_border_style',
+            'capconnect_checkbox_border_width',
+            'capconnect_checkbox_border_radius',
+            'capconnect_spinner_color',
+            'capconnect_spinner_background',
+            'capconnect_error_background',
+            'capconnect_error_color',
+            'capconnect_error_border_color',
+            'capconnect_hide_attribution',
         ];
 
         foreach ($options_to_delete as $opt) {
             delete_option($opt);
         }
 
-        wp_safe_redirect(add_query_arg('settings-updated', 'reset-styles', admin_url('options-general.php?page=tpow-settings') . '#styling'));
+        wp_safe_redirect(add_query_arg('settings-updated', 'reset-styles', admin_url('options-general.php?page=capconnect-settings') . '#styling'));
         exit;
     }
 
     public static function checkConnection(string $instance_url = '', string $site_key = '', string $secret = ''): array
     {
         if ($instance_url === '') {
-            $instance_url = (string) get_option('tpow_instance_url', '');
+            $instance_url = (string) get_option('capconnect_instance_url', '');
         }
         if ($site_key === '') {
-            $site_key = (string) get_option('tpow_site_key', '');
+            $site_key = (string) get_option('capconnect_site_key', '');
         }
         if ($secret === '') {
-            $secret = (string) get_option('tpow_secret', '');
+            $secret = (string) get_option('capconnect_secret', '');
         }
 
         if (empty($instance_url)) {
@@ -1654,15 +1720,15 @@ class Tpow_Settings
     public static function sendAlertEmail(string $errorMessage): void
     {
         // Set/update the persistent connection failure notice option
-        update_option('tpow_connection_failed_notice', $errorMessage);
+        update_option('capconnect_connection_failed_notice', $errorMessage);
 
-        $email = get_option('tpow_alert_email', '');
+        $email = get_option('capconnect_alert_email', '');
         if (empty($email)) {
             return;
         }
 
         // Prevent email spam by checking if alert was already sent for the current downtime
-        if (get_option('tpow_alert_sent')) {
+        if (get_option('capconnect_alert_sent')) {
             return;
         }
 
@@ -1678,7 +1744,7 @@ class Tpow_Settings
 
         $sent = wp_mail($email, $subject, $body);
         if ($sent) {
-            update_option('tpow_alert_sent', time());
+            update_option('capconnect_alert_sent', time());
         }
     }
 
@@ -1687,7 +1753,7 @@ class Tpow_Settings
         $result = self::checkConnection();
         if ($result['success']) {
             $this->clearAlertSent();
-            delete_option('tpow_connection_failed_notice');
+            delete_option('capconnect_connection_failed_notice');
         } else {
             self::sendAlertEmail($result['message']);
         }
@@ -1698,7 +1764,7 @@ class Tpow_Settings
      */
     public function clearAlertSent(): void
     {
-        delete_option('tpow_alert_sent');
+        delete_option('capconnect_alert_sent');
     }
 
     /**
@@ -1722,9 +1788,9 @@ class Tpow_Settings
         $this->clearAlertSent();
         $result = self::checkConnection();
         if ($result['success']) {
-            delete_option('tpow_connection_failed_notice');
+            delete_option('capconnect_connection_failed_notice');
         } else {
-            update_option('tpow_connection_failed_notice', $result['message']);
+            update_option('capconnect_connection_failed_notice', $result['message']);
         }
     }
 
@@ -1733,17 +1799,17 @@ class Tpow_Settings
      */
     public function displayLoginCaptchaDisabledNotice(): void
     {
-        if (! current_user_can('manage_options')
-            || ! defined('TPOW_DISABLE_LOGIN_CAPTCHA')
-            || TPOW_DISABLE_LOGIN_CAPTCHA !== true
-        ) {
+        $captchaDisabled = (defined('CAPCONNECT_DISABLE_LOGIN_CAPTCHA') && CAPCONNECT_DISABLE_LOGIN_CAPTCHA === true)
+            || (defined('TPOW_DISABLE_LOGIN_CAPTCHA') && TPOW_DISABLE_LOGIN_CAPTCHA === true);
+
+        if (! current_user_can('manage_options') || ! $captchaDisabled) {
             return;
         }
         ?>
         <div class="notice notice-error">
             <p>
                 <strong><?php esc_html_e('CapConnect security warning:', 'capconnect-for-wp'); ?></strong>
-                <?php esc_html_e('The login captcha is disabled by TPOW_DISABLE_LOGIN_CAPTCHA. Remove the constant from wp-config.php immediately after access has been restored.', 'capconnect-for-wp'); ?>
+                <?php esc_html_e('The login captcha is disabled by a CapConnect recovery constant. Remove it from wp-config.php immediately after access has been restored.', 'capconnect-for-wp'); ?>
             </p>
         </div>
         <?php
@@ -1762,7 +1828,7 @@ class Tpow_Settings
             return;
         }
 
-        $settings_url = admin_url('options-general.php?page=tpow-settings');
+        $settings_url = admin_url('options-general.php?page=capconnect-settings');
         ?>
         <div class="notice notice-warning">
             <p>
@@ -1793,16 +1859,16 @@ class Tpow_Settings
         }
 
         // Fail Open intentionally tolerates infrastructure failures, so do not show a load-time error.
-        if ((bool) get_option('tpow_fail_open', false)) {
+        if ((bool) get_option('capconnect_fail_open', false)) {
             return;
         }
 
-        $error = get_option('tpow_connection_failed_notice');
+        $error = get_option('capconnect_connection_failed_notice');
         if (empty($error)) {
             return;
         }
 
-        $settings_url = admin_url('options-general.php?page=tpow-settings');
+        $settings_url = admin_url('options-general.php?page=capconnect-settings');
         ?>
         <div class="notice notice-error">
             <p>
@@ -1820,9 +1886,12 @@ class Tpow_Settings
         <?php
     }
 
+    /**
+     * Verifies a Cap connection request from the settings page.
+     */
     public function handleTestConnection(): void
     {
-        check_ajax_referer('tpow_test_connection', 'nonce');
+        $this->verifyAjaxNonce('capconnect_test_connection', 'tpow_test_connection');
 
         if (! current_user_can('manage_options')) {
             wp_send_json_error(['message' => __('Unauthorized.', 'capconnect-for-wp')], 403);
@@ -1835,17 +1904,20 @@ class Tpow_Settings
         $result = self::checkConnection($instance_url, $site_key, $secret);
         if ($result['success']) {
             $this->clearAlertSent();
-            delete_option('tpow_connection_failed_notice');
+            delete_option('capconnect_connection_failed_notice');
             wp_send_json_success($result);
         } else {
-            update_option('tpow_connection_failed_notice', $result['message']);
+            update_option('capconnect_connection_failed_notice', $result['message']);
             wp_send_json_error($result);
         }
     }
 
+    /**
+     * Records a widget error reported by the frontend.
+     */
     public function handleReportFrontendError(): void
     {
-        check_ajax_referer('tpow_report_error', 'nonce');
+        $this->verifyAjaxNonce('capconnect_report_error', 'tpow_report_error');
 
         $error_message = isset($_POST['error_message']) ? sanitize_text_field(wp_unslash($_POST['error_message'])) : '';
 
@@ -1855,6 +1927,18 @@ class Tpow_Settings
         }
 
         wp_send_json_error(['message' => __('Empty error message.', 'capconnect-for-wp')], 400);
+    }
+
+    /**
+     * Accepts a CapConnect nonce and its legacy TPOW equivalent.
+     */
+    private function verifyAjaxNonce(string $action, string $legacyAction): void
+    {
+        $nonce = isset($_REQUEST['nonce']) ? sanitize_text_field(wp_unslash($_REQUEST['nonce'])) : '';
+
+        if (! wp_verify_nonce($nonce, $action) && ! wp_verify_nonce($nonce, $legacyAction)) {
+            wp_die('-1', 403);
+        }
     }
 
     public function renderLabelsSectionDescription(): void

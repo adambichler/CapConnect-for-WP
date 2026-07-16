@@ -614,11 +614,11 @@ msgstr "CapConnect-Sicherheitswarnung:"
 
 #: includes/class-cap-settings.php:1746
 msgid ""
-"The login captcha is disabled by TPOW_DISABLE_LOGIN_CAPTCHA. Remove the "
-"constant from wp-config.php immediately after access has been restored."
+"The login captcha is disabled by a CapConnect recovery constant. Remove it "
+"from wp-config.php immediately after access has been restored."
 msgstr ""
-"Das Login-Captcha ist durch TPOW_DISABLE_LOGIN_CAPTCHA deaktiviert. "
-"Entfernen Sie die Konstante unmittelbar nach der Wiederherstellung des "
+"Das Login-Captcha ist durch eine CapConnect-Wiederherstellungskonstante "
+"deaktiviert. Entfernen Sie sie unmittelbar nach der Wiederherstellung des "
 "Zugriffs aus der wp-config.php."
 
 #: includes/class-cap-settings.php:1769

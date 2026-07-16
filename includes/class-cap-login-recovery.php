@@ -6,10 +6,11 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Tpow_Login_Recovery
+class Capconnect_Login_Recovery
 {
-    private const ACTION = 'tpow_recovery';
-    private const COOKIE_NAME = 'tpow_login_recovery';
+    private const ACTION = 'capconnect_recovery';
+    private const LEGACY_ACTION = 'tpow_recovery';
+    private const COOKIE_NAME = 'capconnect_login_recovery';
     private const TOKEN_TTL = 15 * MINUTE_IN_SECONDS;
     private const SESSION_TTL = 10 * MINUTE_IN_SECONDS;
     private const RATE_LIMIT_TTL = HOUR_IN_SECONDS;
@@ -23,6 +24,7 @@ class Tpow_Login_Recovery
     public function init(): void
     {
         add_action('login_form_' . self::ACTION, [$this, 'handleRecoveryAction']);
+        add_action('login_form_' . self::LEGACY_ACTION, [$this, 'handleRecoveryAction']);
         add_action('login_form', [$this, 'renderLoginRecoveryControl'], 20);
         add_action('login_enqueue_scripts', [$this, 'enqueueRecoveryStyles']);
     }
@@ -37,10 +39,10 @@ class Tpow_Login_Recovery
         }
 
         wp_enqueue_style(
-            'tpow-widget',
-            TPOW_PLUGIN_URL . 'assets/css/tpow-widget.css',
+            'capconnect-widget',
+            CAPCONNECT_PLUGIN_URL . 'assets/css/capconnect-widget.css',
             [],
-            TPOW_VERSION
+            CAPCONNECT_VERSION
         );
     }
 
@@ -57,8 +59,8 @@ class Tpow_Login_Recovery
      */
     public function isAvailable(): bool
     {
-        return Tpow_Settings::isConfigured()
-            && (bool) get_option('tpow_protect_login', true)
+        return Capconnect_Settings::isConfigured()
+            && (bool) get_option('capconnect_protect_login', true)
             && ! $this->isLoginCaptchaDisabled();
     }
 
@@ -72,7 +74,7 @@ class Tpow_Login_Recovery
         }
 
         if ($this->hasActiveSession()) {
-            echo '<p class="message tpow-recovery-active-message">'
+            echo '<p class="message capconnect-recovery-active-message tpow-recovery-active-message">'
                 . esc_html__('Captcha recovery is active for one administrator account. Enter that account’s username and password to continue.', 'capconnect-for-wp')
                 . '</p>';
             return;
@@ -105,8 +107,8 @@ class Tpow_Login_Recovery
             ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
             : 'GET';
 
-        if ($method === 'POST' && isset($_POST['tpow_request_recovery'])) {
-            check_admin_referer('tpow_request_recovery', 'tpow_recovery_nonce');
+        if ($method === 'POST' && isset($_POST['capconnect_request_recovery'])) {
+            check_admin_referer('capconnect_request_recovery', 'capconnect_recovery_nonce');
             $identifier = isset($_POST['user_login'])
                 ? sanitize_text_field(wp_unslash($_POST['user_login']))
                 : '';
@@ -115,15 +117,15 @@ class Tpow_Login_Recovery
             exit;
         }
 
-        if ($method === 'POST' && isset($_POST['tpow_confirm_recovery'])) {
-            $userId = isset($_POST['tpow_user_id']) ? absint($_POST['tpow_user_id']) : 0;
-            check_admin_referer('tpow_confirm_recovery_' . $userId, 'tpow_recovery_nonce');
-            $token = isset($_POST['tpow_recovery_token'])
-                ? sanitize_text_field(wp_unslash($_POST['tpow_recovery_token']))
+        if ($method === 'POST' && isset($_POST['capconnect_confirm_recovery'])) {
+            $userId = isset($_POST['capconnect_user_id']) ? absint($_POST['capconnect_user_id']) : 0;
+            check_admin_referer('capconnect_confirm_recovery_' . $userId, 'capconnect_recovery_nonce');
+            $token = isset($_POST['capconnect_recovery_token'])
+                ? sanitize_text_field(wp_unslash($_POST['capconnect_recovery_token']))
                 : '';
 
             if ($this->confirmRecovery($userId, $token)) {
-                wp_safe_redirect(add_query_arg('tpow-recovery', 'active', wp_login_url()));
+                wp_safe_redirect(add_query_arg('capconnect-recovery', 'active', wp_login_url()));
                 exit;
             }
 
@@ -183,7 +185,8 @@ class Tpow_Login_Recovery
      */
     public function isLoginCaptchaDisabled(): bool
     {
-        return defined('TPOW_DISABLE_LOGIN_CAPTCHA') && TPOW_DISABLE_LOGIN_CAPTCHA === true;
+        return (defined('CAPCONNECT_DISABLE_LOGIN_CAPTCHA') && CAPCONNECT_DISABLE_LOGIN_CAPTCHA === true)
+            || (defined('TPOW_DISABLE_LOGIN_CAPTCHA') && TPOW_DISABLE_LOGIN_CAPTCHA === true);
     }
 
     /**
@@ -342,7 +345,7 @@ class Tpow_Login_Recovery
     private function incrementRateLimit(string $key, int $limit): bool
     {
         if (wp_using_ext_object_cache()) {
-            $group = 'tpow_rate_limit';
+            $group = 'capconnect_rate_limit';
 
             if (wp_cache_add($key, 1, $group, self::RATE_LIMIT_TTL)) {
                 return $limit >= 1;
@@ -384,15 +387,15 @@ class Tpow_Login_Recovery
             return;
         }
         ?>
-        <form name="tpow-recovery-form" id="tpow-recovery-form" action="<?php echo esc_url(add_query_arg('action', self::ACTION, wp_login_url())); ?>" method="post">
+        <form name="capconnect-recovery-form" id="capconnect-recovery-form" action="<?php echo esc_url(add_query_arg('action', self::ACTION, wp_login_url())); ?>" method="post">
             <p>
                 <label for="user_login"><?php esc_html_e('Administrator username or email address', 'capconnect-for-wp'); ?></label>
                 <input type="text" name="user_login" id="user_login" class="input" value="" size="20" autocapitalize="none" autocomplete="username" required="required" />
             </p>
             <p class="description"><?php esc_html_e('We will send a short-lived captcha recovery link to the email address stored on the administrator account.', 'capconnect-for-wp'); ?></p>
-            <?php wp_nonce_field('tpow_request_recovery', 'tpow_recovery_nonce'); ?>
-            <p class="submit tpow-recovery-submit">
-                <button type="submit" name="tpow_request_recovery" id="wp-submit" class="button button-primary button-large tpow-recovery-button" value="1"><?php esc_html_e('Send recovery email', 'capconnect-for-wp'); ?></button>
+            <?php wp_nonce_field('capconnect_request_recovery', 'capconnect_recovery_nonce'); ?>
+            <p class="submit capconnect-recovery-submit tpow-recovery-submit">
+                <button type="submit" name="capconnect_request_recovery" id="wp-submit" class="button button-primary button-large capconnect-recovery-button tpow-recovery-button" value="1"><?php esc_html_e('Send recovery email', 'capconnect-for-wp'); ?></button>
             </p>
         </form>
         <p id="nav"><a href="<?php echo esc_url(wp_login_url()); ?>"><?php esc_html_e('Back to login', 'capconnect-for-wp'); ?></a></p>
@@ -408,13 +411,13 @@ class Tpow_Login_Recovery
         login_header(__('Confirm Captcha Recovery', 'capconnect-for-wp'));
         ?>
         <div class="message"><p><?php esc_html_e('Confirming creates a ten-minute captcha exception for this administrator account. You must still enter the correct username and password.', 'capconnect-for-wp'); ?></p></div>
-        <form name="tpow-recovery-confirm-form" id="tpow-recovery-confirm-form" action="<?php echo esc_url(add_query_arg('action', self::ACTION, wp_login_url())); ?>" method="post">
-            <input type="hidden" name="tpow_user_id" value="<?php echo esc_attr((string) $userId); ?>" />
-            <input type="hidden" name="tpow_recovery_token" value="<?php echo esc_attr($token); ?>" />
-            <?php wp_nonce_field('tpow_confirm_recovery_' . $userId, 'tpow_recovery_nonce'); ?>
-            <p class="description tpow-recovery-button-description"><?php esc_html_e('Use this button to activate the one-time captcha recovery for this administrator account.', 'capconnect-for-wp'); ?></p>
-            <p class="submit tpow-recovery-submit">
-                <button type="submit" name="tpow_confirm_recovery" id="wp-submit" class="button button-primary button-large tpow-recovery-button" value="1"><?php esc_html_e('Activate captcha recovery', 'capconnect-for-wp'); ?></button>
+        <form name="capconnect-recovery-confirm-form" id="capconnect-recovery-confirm-form" action="<?php echo esc_url(add_query_arg('action', self::ACTION, wp_login_url())); ?>" method="post">
+            <input type="hidden" name="capconnect_user_id" value="<?php echo esc_attr((string) $userId); ?>" />
+            <input type="hidden" name="capconnect_recovery_token" value="<?php echo esc_attr($token); ?>" />
+            <?php wp_nonce_field('capconnect_confirm_recovery_' . $userId, 'capconnect_recovery_nonce'); ?>
+            <p class="description capconnect-recovery-button-description tpow-recovery-button-description"><?php esc_html_e('Use this button to activate the one-time captcha recovery for this administrator account.', 'capconnect-for-wp'); ?></p>
+            <p class="submit capconnect-recovery-submit tpow-recovery-submit">
+                <button type="submit" name="capconnect_confirm_recovery" id="wp-submit" class="button button-primary button-large capconnect-recovery-button tpow-recovery-button" value="1"><?php esc_html_e('Activate captcha recovery', 'capconnect-for-wp'); ?></button>
             </p>
         </form>
         <p id="nav"><a href="<?php echo esc_url(wp_login_url()); ?>"><?php esc_html_e('Back to login', 'capconnect-for-wp'); ?></a></p>
@@ -428,10 +431,10 @@ class Tpow_Login_Recovery
     private function renderInvalidLink(): void
     {
         login_header(__('Captcha Recovery', 'capconnect-for-wp'));
-        echo '<div id="login_error" class="tpow-recovery-error"><p>'
+        echo '<div id="login_error" class="capconnect-recovery-error tpow-recovery-error"><p>'
             . esc_html__('This captcha recovery link is invalid, expired, or has already been used.', 'capconnect-for-wp')
             . '</p></div>';
-        echo '<p class="submit tpow-recovery-submit-flush"><a class="button button-primary button-large tpow-recovery-link-button" href="' . esc_url(add_query_arg('action', self::ACTION, wp_login_url())) . '">'
+        echo '<p class="submit capconnect-recovery-submit-flush tpow-recovery-submit-flush"><a class="button button-primary button-large capconnect-recovery-link-button tpow-recovery-link-button" href="' . esc_url(add_query_arg('action', self::ACTION, wp_login_url())) . '">'
             . esc_html__('Request a new recovery link', 'capconnect-for-wp')
             . '</a></p>';
         echo '<p id="nav"><a href="' . esc_url(wp_login_url()) . '">'
@@ -505,7 +508,7 @@ class Tpow_Login_Recovery
      */
     private function userTokenKey(int $userId): string
     {
-        return 'tpow_rt_' . get_current_blog_id() . '_' . $userId;
+        return 'capconnect_rt_' . get_current_blog_id() . '_' . $userId;
     }
 
     /**
@@ -513,7 +516,7 @@ class Tpow_Login_Recovery
      */
     private function sessionKey(string $sessionHash): string
     {
-        return 'tpow_rs_' . substr($sessionHash, 0, 40);
+        return 'capconnect_rs_' . substr($sessionHash, 0, 40);
     }
 
     /**
@@ -521,7 +524,7 @@ class Tpow_Login_Recovery
      */
     private function userSessionKey(int $userId): string
     {
-        return 'tpow_rsu_' . get_current_blog_id() . '_' . $userId;
+        return 'capconnect_rsu_' . get_current_blog_id() . '_' . $userId;
     }
 
     /**
@@ -529,7 +532,7 @@ class Tpow_Login_Recovery
      */
     private function accountRateLimitKey(int $userId): string
     {
-        return 'tpow_ra_' . substr($this->hashValue(get_current_blog_id() . ':user:' . $userId), 0, 40);
+        return 'capconnect_ra_' . substr($this->hashValue(get_current_blog_id() . ':user:' . $userId), 0, 40);
     }
 
     /**
@@ -540,6 +543,6 @@ class Tpow_Login_Recovery
         $ip = isset($_SERVER['REMOTE_ADDR'])
             ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']))
             : 'unknown';
-        return 'tpow_ri_' . substr($this->hashValue(get_current_blog_id() . ':ip:' . $ip), 0, 40);
+        return 'capconnect_ri_' . substr($this->hashValue(get_current_blog_id() . ':ip:' . $ip), 0, 40);
     }
 }

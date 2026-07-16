@@ -558,8 +558,8 @@ msgstr ""
 
 #: includes/class-cap-settings.php:1746
 msgid ""
-"The login captcha is disabled by TPOW_DISABLE_LOGIN_CAPTCHA. Remove the "
-"constant from wp-config.php immediately after access has been restored."
+"The login captcha is disabled by a CapConnect recovery constant. Remove it "
+"from wp-config.php immediately after access has been restored."
 msgstr ""
 
 #: includes/class-cap-settings.php:1769

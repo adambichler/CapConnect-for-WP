@@ -63,7 +63,7 @@ cap-widget {
   clear: both !important;
 }
 
-.tpow-error-message {
+.capconnect-error-message {
   display: block;
   box-sizing: border-box;
   width: 100%;
@@ -75,28 +75,28 @@ cap-widget {
   margin-bottom: 16px;
 }
 
-#login .tpow-recovery-active-message {
+#login .capconnect-recovery-active-message {
   margin-bottom: 16px;
 }
 
-#login .tpow-recovery-submit {
+#login .capconnect-recovery-submit {
   margin-top: 16px;
 }
 
-#login .tpow-recovery-button {
+#login .capconnect-recovery-button {
   width: 100%;
   margin-top: 16px;
 }
 
-#login .tpow-recovery-error {
+#login .capconnect-recovery-error {
   margin-bottom: 16px;
 }
 
-#login .tpow-recovery-submit-flush {
+#login .capconnect-recovery-submit-flush {
   margin: 0;
 }
 
-#login .tpow-recovery-link-button {
+#login .capconnect-recovery-link-button {
   display: block;
   box-sizing: border-box;
   width: 100%;

@@ -6,7 +6,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Tpow_Verifier
+class Capconnect_Verifier
 {
     /**
      * Verify a Cap token against the configured Cap instance.
@@ -21,13 +21,13 @@ class Tpow_Verifier
         $response = $this->sendVerificationRequest($token);
 
         if (is_wp_error($response)) {
-            Tpow_Settings::sendAlertEmail($response->get_error_message());
+            Capconnect_Settings::sendAlertEmail($response->get_error_message());
             return $this->failOpen();
         }
 
         $statusCode = wp_remote_retrieve_response_code($response);
         if ($this->isTransientStatusCode($statusCode)) {
-            Tpow_Settings::sendAlertEmail(sprintf(
+            Capconnect_Settings::sendAlertEmail(sprintf(
                 /* translators: 1: HTTP status code */
                 __('Server responded with HTTP status code %d', 'capconnect-for-wp'),
                 $statusCode
@@ -36,7 +36,7 @@ class Tpow_Verifier
         }
 
         if ($statusCode < 200 || $statusCode >= 300) {
-            Tpow_Settings::sendAlertEmail(sprintf(
+            Capconnect_Settings::sendAlertEmail(sprintf(
                 /* translators: 1: HTTP status code */
                 __('Server responded with HTTP status code %d', 'capconnect-for-wp'),
                 $statusCode
@@ -48,20 +48,20 @@ class Tpow_Verifier
         $data = json_decode($body, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            Tpow_Settings::sendAlertEmail(__('Cap server returned invalid JSON.', 'capconnect-for-wp'));
+            Capconnect_Settings::sendAlertEmail(__('Cap server returned invalid JSON.', 'capconnect-for-wp'));
             return false;
         }
 
         $contentType = wp_remote_retrieve_header($response, 'content-type');
         if (! $this->isValidCapResponse($data, $contentType)) {
-            Tpow_Settings::sendAlertEmail(__('Cap server returned an unexpected response.', 'capconnect-for-wp'));
+            Capconnect_Settings::sendAlertEmail(__('Cap server returned an unexpected response.', 'capconnect-for-wp'));
             return false;
         }
 
         // Connection succeeded (we got a valid response from the server):
         // clear the failure notice and alert sent state.
-        delete_option('tpow_connection_failed_notice');
-        delete_option('tpow_alert_sent');
+        delete_option('capconnect_connection_failed_notice');
+        delete_option('capconnect_alert_sent');
 
         return $data['success'];
     }
@@ -127,21 +127,21 @@ class Tpow_Verifier
 
     private function siteVerifyUrl(): string
     {
-        return rtrim(Tpow_Settings::getEndpoint(), '/') . '/siteverify';
+        return rtrim(Capconnect_Settings::getEndpoint(), '/') . '/siteverify';
     }
 
     private function secret(): string
     {
-        return (string) get_option('tpow_secret', '');
+        return (string) get_option('capconnect_secret', '');
     }
 
     private function timeout(): int
     {
-        return (int) get_option('tpow_timeout', 5);
+        return (int) get_option('capconnect_timeout', 5);
     }
 
     private function failOpen(): bool
     {
-        return (bool) get_option('tpow_fail_open', false);
+        return (bool) get_option('capconnect_fail_open', false);
     }
 }

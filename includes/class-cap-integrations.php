@@ -6,25 +6,25 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Tpow_Integrations
+class Capconnect_Integrations
 {
-    private Tpow_Verifier $verifier;
-    private Tpow_Widget $widget;
-    private Tpow_Login_Recovery $loginRecovery;
+    private Capconnect_Verifier $verifier;
+    private Capconnect_Widget $widget;
+    private Capconnect_Login_Recovery $loginRecovery;
 
     /**
      * Creates the form integrations and their login recovery dependency.
      */
-    public function __construct(?Tpow_Login_Recovery $loginRecovery = null)
+    public function __construct(?Capconnect_Login_Recovery $loginRecovery = null)
     {
-        $this->verifier      = new Tpow_Verifier();
-        $this->widget        = new Tpow_Widget();
-        $this->loginRecovery = $loginRecovery ?? new Tpow_Login_Recovery();
+        $this->verifier      = new Capconnect_Verifier();
+        $this->widget        = new Capconnect_Widget();
+        $this->loginRecovery = $loginRecovery ?? new Capconnect_Login_Recovery();
     }
 
     public function init(): void
     {
-        if (! Tpow_Settings::isConfigured()) {
+        if (! Capconnect_Settings::isConfigured()) {
             return;
         }
 
@@ -39,7 +39,7 @@ class Tpow_Integrations
 
     private function initCommentIntegration(): void
     {
-        if (! get_option('tpow_protect_comments', true)) {
+        if (! get_option('capconnect_protect_comments', true)) {
             return;
         }
         add_action('comment_form_after_fields', [$this, 'renderWidgetComment']);
@@ -51,7 +51,7 @@ class Tpow_Integrations
      */
     private function initLoginIntegration(): void
     {
-        if (! get_option('tpow_protect_login', true) || $this->loginRecovery->isLoginCaptchaDisabled()) {
+        if (! get_option('capconnect_protect_login', true) || $this->loginRecovery->isLoginCaptchaDisabled()) {
             return;
         }
         add_action('login_form', [$this, 'renderWidgetLogin']);
@@ -60,7 +60,7 @@ class Tpow_Integrations
 
     private function initRegisterIntegration(): void
     {
-        if (! get_option('tpow_protect_register', true)) {
+        if (! get_option('capconnect_protect_register', true)) {
             return;
         }
         add_action('register_form', [$this, 'renderWidgetRegister']);
@@ -69,7 +69,7 @@ class Tpow_Integrations
 
     private function initLostPasswordIntegration(): void
     {
-        if (! get_option('tpow_protect_lostpassword', true)) {
+        if (! get_option('capconnect_protect_lostpassword', true)) {
             return;
         }
         add_action('lostpassword_form', [$this, 'renderWidgetLostPassword']);
@@ -81,7 +81,7 @@ class Tpow_Integrations
 
     private function initWooCommerceIntegration(): void
     {
-        if (! get_option('tpow_protect_woocommerce', true)) {
+        if (! get_option('capconnect_protect_woocommerce', true)) {
             return;
         }
 
@@ -95,7 +95,7 @@ class Tpow_Integrations
 
     private function initGravityFormsIntegration(): void
     {
-        if (! get_option('tpow_protect_gravityforms', true)) {
+        if (! get_option('capconnect_protect_gravityforms', true)) {
             return;
         }
 
@@ -109,7 +109,7 @@ class Tpow_Integrations
 
     private function initForminatorIntegration(): void
     {
-        if (! get_option('tpow_protect_forminator', true)) {
+        if (! get_option('capconnect_protect_forminator', true)) {
             return;
         }
 
@@ -125,7 +125,7 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
         }
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -142,7 +142,7 @@ class Tpow_Integrations
 
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
         }
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -152,7 +152,7 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
         }
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -162,7 +162,7 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
         }
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -172,7 +172,7 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
         }
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -182,7 +182,7 @@ class Tpow_Integrations
     {
         $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="form-row cap-widget-wrapper">' . $html . '</p>';
         }
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -221,7 +221,7 @@ class Tpow_Integrations
         if (! $this->verifier->verify($token)) {
             $this->loginRecovery->markCaptchaValidationFailed();
             return new \WP_Error(
-                'tpow_verification_failed',
+                'capconnect_verification_failed',
                 $this->getVerificationFailedMessage()
             );
         }
@@ -235,7 +235,7 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             $errors->add(
-                'tpow_verification_failed',
+                'capconnect_verification_failed',
                 $this->getVerificationFailedMessage()
             );
         }
@@ -249,7 +249,7 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             $errors->add(
-                'tpow_verification_failed',
+                'capconnect_verification_failed',
                 $this->getVerificationFailedMessage()
             );
         }
@@ -265,7 +265,7 @@ class Tpow_Integrations
 
         if (! $this->verifier->verify($token)) {
             $errors->add(
-                'tpow_verification_failed',
+                'capconnect_verification_failed',
                 $this->getVerificationFailedMessage()
             );
         }
@@ -288,7 +288,7 @@ class Tpow_Integrations
         $this->widget->enqueueAssets();
 
         $html = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<div class="cap-widget-wrapper">' . $html . '</div>';
         }
 
@@ -326,7 +326,7 @@ class Tpow_Integrations
         $this->widget->enqueueAssets();
 
         $widgetHtml = $this->widget->renderForMode();
-        if (get_option('tpow_mode', 'widget') !== 'programmatic') {
+        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $widgetHtml = '<div class="cap-widget-wrapper">' . $widgetHtml . '</div>';
         }
 
@@ -371,7 +371,7 @@ class Tpow_Integrations
 
     private function getVerificationFailedMessage(): string
     {
-        $message = (string) get_option('tpow_verification_failed_label', '');
+        $message = (string) get_option('capconnect_verification_failed_label', '');
         return $message !== '' ? $message : __('Captcha verification failed', 'capconnect-for-wp');
     }
 }

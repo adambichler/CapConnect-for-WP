@@ -14,6 +14,12 @@ Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, logi
 
 CapConnect for WP integrates [TryCap](https://trycap.dev/) — the open-source version of Cap — into your WordPress site.
 
+= Upstream compatibility and prefixes =
+
+CapConnect for WP uses the `capconnect_*` prefix convention to align WordPress-specific integration points with the upstream Cap ecosystem where possible. The plugin is only partially compatible with the upstream repository because its settings, hooks, and form integrations are specific to WordPress.
+
+The `capconnect_*` options, hooks, shortcodes, and `window.CAPCONNECT_CONFIG` are the preferred public interface. On upgrade, all known `tpow_*` options are migrated automatically. Legacy `tpow_*` hooks, `window.TPOW_CONFIG`, `[tpow_widget]`, and `[tpow_programmatic]` remain available for compatibility with previous versions.
+
 Unlike traditional CAPTCHAs, Cap does not rely on third-party services or user interaction: it runs a small computation in the visitor's browser to prove they are human, without tracking or collecting personal data.
 
 **External service — Cap server**
@@ -32,8 +38,8 @@ The Cap widget uses a WebAssembly (WASM) module to perform the proof-of-work com
 * Protects lost password and password reset forms
 * Protects WooCommerce checkout (if WooCommerce is active)
 * Protects Gravity Forms (if Gravity Forms is active)
-* Shortcode `[tpow_widget]` for use in any page or form builder
-* Shortcode `[tpow_programmatic]` for programmatic Cap usage (headless mode)
+* Shortcode `[capconnect_widget]` for use in any page or form builder
+* Shortcode `[capconnect_programmatic]` for programmatic Cap usage (headless mode)
 * Settings page under **Settings > CapConnect**
 * Fail-open mode: lets requests through if the Cap server is unreachable
 * No external dependencies — uses native WordPress HTTP API and bundled WASM
@@ -74,7 +80,7 @@ The email link is valid for 15 minutes. After explicit confirmation it creates a
 
 Recovery requires working WordPress email delivery. HTTPS is strongly recommended so the recovery cookie can use the `Secure` attribute. Test changed Cap credentials before saving them when login protection is active. Untested values can still be saved, but the settings page displays a lockout warning.
 
-As a mail-independent emergency fallback, temporarily add `define('TPOW_DISABLE_LOGIN_CAPTCHA', true);` to `wp-config.php`. This disables Cap only for the WordPress login form. Remove the constant immediately after access has been restored.
+As a mail-independent emergency fallback, temporarily add `define('CAPCONNECT_DISABLE_LOGIN_CAPTCHA', true);` to `wp-config.php`. This disables Cap only for the WordPress login form. Remove the constant immediately after access has been restored.
 
 == Frequently Asked Questions ==
 
@@ -96,7 +102,9 @@ Yes. If Gravity Forms is active, the Cap widget is automatically prepended to th
 
 = What is the shortcode? =
 
-Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
+Use `[capconnect_widget]` to embed the Cap widget in any page or custom form.
+
+The legacy `[tpow_widget]` and `[tpow_programmatic]` shortcodes continue to work for existing content.
 
 == Changelog ==
 
@@ -111,8 +119,8 @@ Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 * Automatic updates via GitHub Releases of the CapConnect for WP fork (Plugin Update Checker v5.6)
 
 = 1.2.0 =
-* Programmatic mode: injection of window.TPOW_CONFIG (apiEndpoint, tokenField) via enqueueAssets()
-* New shortcode [tpow_programmatic]: loads assets and inserts a hidden field ready to receive the solved token via new Cap({...})
+* Programmatic mode: injection of window.CAPCONNECT_CONFIG (apiEndpoint, tokenField) via enqueueAssets()
+* New shortcode [capconnect_programmatic]: loads assets and inserts a hidden field ready to receive the solved token via new Cap({...})
 
 = 1.1.0 =
 * Widget i18n: all Cap widget labels are now translated via WordPress translation system (data-cap-i18n-* attributes)
@@ -121,5 +129,5 @@ Use `[tpow_widget]` to embed the Cap widget in any page or custom form.
 = 1.0.0 =
 * Initial release
 * Comment, login, registration, and WooCommerce checkout protection
-* Shortcode `[tpow_widget]`
+* Shortcode `[capconnect_widget]`
 * Settings page under Settings > CapConnect

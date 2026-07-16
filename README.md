@@ -4,6 +4,12 @@ WordPress plugin to integrate [TryCap](https://trycap.dev/) — the open-source 
 
 No external dependencies: everything relies on native WordPress APIs. The WebAssembly module is bundled locally in the plugin.
 
+## Upstream compatibility and prefixes
+
+CapConnect for WP follows the `capconnect_*` prefix convention to align its WordPress-specific integration points with the upstream Cap ecosystem where possible. It remains only partially compatible with the upstream repository because WordPress settings, hooks, and form integrations are specific to this plugin.
+
+The current `capconnect_*` options, hooks, shortcodes, and `window.CAPCONNECT_CONFIG` are the preferred public interface. During an upgrade, all known `tpow_*` options are migrated automatically. Existing `tpow_*` hooks and `window.TPOW_CONFIG` remain available as compatibility aliases, and the legacy `[tpow_widget]` and `[tpow_programmatic]` shortcodes continue to work.
+
 ---
 
 ## Prerequisites
@@ -53,7 +59,7 @@ Before saving changed Cap credentials while login protection is active, use **Te
 For a mail-independent emergency fallback, add the following temporary constant to `wp-config.php`:
 
 ```php
-define('TPOW_DISABLE_LOGIN_CAPTCHA', true);
+define('CAPCONNECT_DISABLE_LOGIN_CAPTCHA', true);
 ```
 
 This disables Cap only on the WordPress login form. All other protected forms remain unchanged. Remove the constant immediately after administrator access and the Cap configuration have been restored.
@@ -108,47 +114,51 @@ The plugin automatically integrates with the following WordPress forms upon acti
 
 WooCommerce and Gravity Forms integrations are only active if the corresponding plugins are installed and active.
 
-### Shortcode `[tpow_widget]`
+### Shortcode `[capconnect_widget]`
 
 Insert the Cap widget in any page, post, or form builder:
 
 ```
-[tpow_widget]
+[capconnect_widget]
 ```
 
 With CSP nonce:
 
 ```
-[tpow_widget nonce="your-nonce"]
+[capconnect_widget nonce="your-nonce"]
 ```
 
-The shortcode automatically enqueues the widget's JS, CSS, and WASM, as well as `window.TPOW_CONFIG`.
+The shortcode automatically enqueues the widget's JS, CSS, and WASM, as well as `window.CAPCONNECT_CONFIG`.
 
-### Programmatic Mode — Shortcode `[tpow_programmatic]`
+The legacy `[tpow_widget]` shortcode remains supported for existing content.
 
-For cases where you want to trigger Cap verification without displaying a visible widget (SPA, multi-step form, custom integration), use `[tpow_programmatic]`:
+### Programmatic Mode — Shortcode `[capconnect_programmatic]`
+
+For cases where you want to trigger Cap verification without displaying a visible widget (SPA, multi-step form, custom integration), use `[capconnect_programmatic]`:
 
 ```
-[tpow_programmatic field="cap-token" id="tpow-token"]
+[capconnect_programmatic field="cap-token" id="capconnect-token"]
 ```
 
 | Attribute | Description | Default |
 |----------|-------------|--------|
 | `field` | Name of the `<input type="hidden">` | `cap-token` |
-| `id` | HTML ID of the field | `tpow-token` |
+| `id` | HTML ID of the field | `capconnect-token` |
 
-The shortcode enqueues the assets and inserts a hidden field. The endpoint and the field name are exposed in `window.TPOW_CONFIG`, available as soon as the script loads.
+The shortcode enqueues the assets and inserts a hidden field. The endpoint and the field name are exposed in `window.CAPCONNECT_CONFIG`, available as soon as the script loads.
+
+The legacy `[tpow_programmatic]` shortcode remains supported for existing content.
 
 **Example:**
 
 ```html
-[tpow_programmatic field="cap-token" id="my-cap-token"]
+[capconnect_programmatic field="cap-token" id="my-cap-token"]
 
 <script type="module">
 document.getElementById('submit-btn').addEventListener('click', async (e) => {
     e.preventDefault();
 
-    const cap = new Cap({ apiEndpoint: window.TPOW_CONFIG.apiEndpoint });
+    const cap = new Cap({ apiEndpoint: window.CAPCONNECT_CONFIG.apiEndpoint });
 
     cap.addEventListener('progress', (event) => {
         console.log(`Solving… ${event.detail.progress}%`);
@@ -161,10 +171,10 @@ document.getElementById('submit-btn').addEventListener('click', async (e) => {
 </script>
 ```
 
-`window.TPOW_CONFIG` is automatically injected by `wp_add_inline_script` when enqueuing assets (via `[tpow_widget]`, `[tpow_programmatic]`, or one of the native integrations):
+`window.CAPCONNECT_CONFIG` is automatically injected by `wp_add_inline_script` when enqueuing assets (via `[capconnect_widget]`, `[capconnect_programmatic]`, or one of the native integrations):
 
 ```javascript
-window.TPOW_CONFIG = {
+window.CAPCONNECT_CONFIG = {
     apiEndpoint: "https://cap.example.com/your-site-key/",
     tokenField:  "cap-token"
 };
@@ -194,37 +204,37 @@ Content-Security-Policy:
 
 Uninstalling via the WordPress interface automatically deletes all saved options from the database:
 
-- `tpow_endpoint`
-- `tpow_instance_url`
-- `tpow_site_key`
-- `tpow_secret`
-- `tpow_token_field`
-- `tpow_timeout`
-- `tpow_fail_open`
-- `tpow_alert_email`
-- `tpow_alert_sent`
-- `tpow_connection_failed_notice`
-- `tpow_hide_attribution`
-- `tpow_mode`
-- `tpow_background`
-- `tpow_color`
-- `tpow_border_color`
-- `tpow_checkbox_background`
-- `tpow_spinner_color`
-- `tpow_spinner_background`
-- `tpow_checkbox_border_color`
-- `tpow_checkbox_border_style`
-- `tpow_checkbox_border_width`
-- `tpow_border_radius`
-- `tpow_checkbox_border_radius`
-- `tpow_checkbox_checkmark_color`
-- `tpow_protect_login`
-- `tpow_protect_register`
-- `tpow_protect_lostpassword`
-- `tpow_protect_comments`
-- `tpow_protect_woocommerce`
-- `tpow_protect_gravityforms`
-- `tpow_protect_forminator`
+- `capconnect_endpoint`
+- `capconnect_instance_url`
+- `capconnect_site_key`
+- `capconnect_secret`
+- `capconnect_token_field`
+- `capconnect_timeout`
+- `capconnect_fail_open`
+- `capconnect_alert_email`
+- `capconnect_alert_sent`
+- `capconnect_connection_failed_notice`
+- `capconnect_hide_attribution`
+- `capconnect_mode`
+- `capconnect_background`
+- `capconnect_color`
+- `capconnect_border_color`
+- `capconnect_checkbox_background`
+- `capconnect_spinner_color`
+- `capconnect_spinner_background`
+- `capconnect_checkbox_border_color`
+- `capconnect_checkbox_border_style`
+- `capconnect_checkbox_border_width`
+- `capconnect_border_radius`
+- `capconnect_checkbox_border_radius`
+- `capconnect_checkbox_checkmark_color`
+- `capconnect_protect_login`
+- `capconnect_protect_register`
+- `capconnect_protect_lostpassword`
+- `capconnect_protect_comments`
+- `capconnect_protect_woocommerce`
+- `capconnect_protect_gravityforms`
+- `capconnect_protect_forminator`
 
 
 ---
