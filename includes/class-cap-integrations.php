@@ -291,6 +291,9 @@ class Tpow_Integrations
         return $validationResult;
     }
 
+    /**
+     * Renders the Cap field in Forminator's field structure.
+     */
     public function renderWidgetForminator(string $html, $button): string
     {
         if (strpos($html, 'forminator-button-submit') === false) {
@@ -301,8 +304,12 @@ class Tpow_Integrations
 
         $widgetHtml = $this->widget->renderForMode();
         if (get_option('tpow_mode', 'widget') !== 'programmatic') {
-            $widgetHtml = '<div class="forminator-row cap-widget-row"><div class="forminator-col forminator-col-12"><div class="forminator-field"><div class="cap-widget-wrapper">' . $widgetHtml . '</div></div></div></div>';
+            $widgetHtml = '<div class="cap-widget-wrapper">' . $widgetHtml . '</div>';
         }
+
+        $widgetHtml = '<div class="forminator-row cap-widget-row"><div class="forminator-col forminator-col-12"><div class="forminator-field">'
+            . $widgetHtml
+            . '</div></div></div>';
 
         return $widgetHtml . $html;
     }
