@@ -35,6 +35,8 @@ class Capconnect_Integrations
         $this->initWooCommerceIntegration();
         $this->initGravityFormsIntegration();
         $this->initForminatorIntegration();
+
+        add_action('login_enqueue_scripts', [$this, 'enqueueNativeFormAssets']);
     }
 
     private function initCommentIntegration(): void
@@ -121,6 +123,28 @@ class Capconnect_Integrations
         add_filter('forminator_custom_form_submit_errors', [$this, 'validateForminatorToken'], 10, 3);
     }
 
+    /**
+     * Loads widget assets before WordPress prints native form page styles.
+     */
+    public function enqueueNativeFormAssets(): void
+    {
+        $action = isset($_REQUEST['action'])
+            ? sanitize_key(wp_unslash($_REQUEST['action']))
+            : 'login';
+
+        $isProtectedForm = match ($action) {
+            'register' => (bool) get_option('capconnect_protect_register', true),
+            'lostpassword', 'retrievepassword', 'rp', 'resetpass' => (bool) get_option('capconnect_protect_lostpassword', true),
+            'login' => (bool) get_option('capconnect_protect_login', true)
+                && ! $this->loginRecovery->isLoginCaptchaDisabled(),
+            default => false,
+        };
+
+        if ($isProtectedForm) {
+            $this->widget->enqueueAssets();
+        }
+    }
+
     public function renderWidgetComment(): void
     {
         $this->widget->enqueueAssets();
@@ -140,7 +164,6 @@ class Capconnect_Integrations
             return;
         }
 
-        $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
         if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
@@ -150,7 +173,6 @@ class Capconnect_Integrations
 
     public function renderWidgetRegister(): void
     {
-        $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
         if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
@@ -160,7 +182,6 @@ class Capconnect_Integrations
 
     public function renderWidgetLostPassword(): void
     {
-        $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
         if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
@@ -170,7 +191,6 @@ class Capconnect_Integrations
 
     public function renderWidgetResetPassword(): void
     {
-        $this->widget->enqueueAssets();
         $html = $this->widget->renderForMode();
         if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<p class="cap-widget-wrapper">' . $html . '</p>';
