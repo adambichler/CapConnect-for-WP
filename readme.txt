@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,10 @@ Recovery requires working WordPress email delivery. HTTPS is strongly recommende
 
 As a mail-independent emergency fallback, temporarily add `define('CAPCONNECT_DISABLE_LOGIN_CAPTCHA', true);` to `wp-config.php`. This disables Cap only for the WordPress login form. Remove the constant immediately after access has been restored.
 
+= Two-factor authentication compatibility =
+
+Login protection is compatible with the two-factor authentication flows of Wordfence, the official Two-Factor plugin, and All In One WP Security (AIOS). CapConnect verifies the visitor once during the login transaction and preserves the verification while the second-factor form is displayed.
+
 == Frequently Asked Questions ==
 
 = Does this plugin work without a Cap server? =
@@ -107,6 +111,10 @@ Use `[capconnect_widget]` to embed the Cap widget in any page or custom form.
 The legacy `[tpow_widget]` and `[tpow_programmatic]` shortcodes continue to work for existing content.
 
 == Changelog ==
+
+= 1.4.0 =
+* Added compatibility with Wordfence, the official Two-Factor plugin, and AIOS two-factor login flows.
+* Preserved the short-lived Cap verification across multi-step authentication and consumed it after successful login.
 
 = 1.3.1 =
 * Added a connection test button in the admin – checks that the Cap endpoint is reachable and responds correctly

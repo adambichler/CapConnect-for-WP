@@ -36,15 +36,15 @@ Access **Settings > CapConnect** in the WordPress administration panel. The opti
 
 ### Connection
 
-| Field | Description | Default |
-|-------|-------------|--------|
+| Field             | Description                                                                                                             | Default            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | Verification Mode | Toggle between **Widget (visible)** (shows the Cap widget) and **Programmatic (invisible)** (silent background solving) | `Widget (visible)` |
-| Instance URL | URL of your self-hosted Cap instance (e.g., `https://cap.example.com`) | — |
-| Site Key | Site key configured on your Cap instance | — |
-| Secret Key | Secret key generated in the Cap dashboard (never expose on the client side) | — |
-| Timeout (seconds) | Delay before abandoning the request to `/siteverify` | `5` |
-| Fail Open | If checked, lets the request through in case of communication error with Cap | unchecked |
-| Alert Email | Email address to receive notifications if connection to the Cap server fails. Leave blank to disable alerts. | — |
+| Instance URL      | URL of your self-hosted Cap instance (e.g., `https://cap.example.com`)                                                  | —                  |
+| Site Key          | Site key configured on your Cap instance                                                                                | —                  |
+| Secret Key        | Secret key generated in the Cap dashboard (never expose on the client side)                                             | —                  |
+| Timeout (seconds) | Delay before abandoning the request to `/siteverify`                                                                    | `5`                |
+| Fail Open         | If checked, lets the request through in case of communication error with Cap                                            | unchecked          |
+| Alert Email       | Email address to receive notifications if connection to the Cap server fails. Leave blank to disable alerts.            | —                  |
 
 #### Administrator login recovery
 
@@ -53,6 +53,10 @@ When login protection is enabled, the WordPress login form includes an administr
 The recovery link does not authenticate the administrator. The correct username or email address and password are still required. The exception is bound to one administrator account and site and is consumed by its first successful login. Requests are limited to three emails per administrator account and ten requests per direct IP address per hour. Only the latest email link remains valid, and opening the link without confirming it does not consume it.
 
 Recovery requires working WordPress email delivery and a valid email address on the administrator account. The **Alert Email** setting is not used for account recovery. HTTPS is strongly recommended so the short-lived recovery cookie can use the `Secure` attribute.
+
+#### Two-factor authentication compatibility
+
+Login protection is compatible with the two-factor authentication flows of Wordfence, the official Two-Factor plugin, and All In One WP Security (AIOS). CapConnect verifies the visitor once during the login transaction and preserves the short-lived verification while the second-factor form is displayed.
 
 Before saving changed Cap credentials while login protection is active, use **Test connection**. The plugin warns before untested credentials are saved but does not block the save, because temporary outages and planned migrations must remain possible.
 
@@ -71,6 +75,7 @@ By default, any communication error with the Cap instance (network, timeout, 5xx
 **An explicitly invalid token (`success: false`) is always rejected**, regardless of this setting.
 
 If an **Alert Email** is set, the plugin:
+
 1. Runs an hourly cron job that tests connection to the Cap server (by requesting a new challenge). If it fails, an email alert is sent.
 2. Monitors frontend validation requests. If a connection failure (network timeout/error, or non-2xx status code) occurs during a frontend captcha completion, an email alert is sent immediately.
 
@@ -79,6 +84,7 @@ To avoid inbox spam, once an alert is sent, further alerts are muted until the c
 ### Forms
 
 Toggle protection for individual native forms:
+
 - **Login Form** (default: checked)
 - **Registration Form** (default: checked)
 - **Lost Password Form** (default: checked) - protects both the lost password request and the reset password forms
@@ -89,6 +95,7 @@ Toggle protection for individual native forms:
 ### Styling
 
 Customize the look and feel of the visible widget (only active when **Verification Mode** is set to **Widget (visible)**):
+
 - **Widget Container Styles**: Background Color, Text Color, Border Color, and Border Radius (px)
 - **Checkbox Styles**: Checkbox Background, Checkmark Color, Border Color, Border Style, Border Width (px), and Checkbox Border Radius (px)
 - **Spinner Styles**: Spinner Background Color and Spinner Color
@@ -102,15 +109,15 @@ Customize the look and feel of the visible widget (only active when **Verificati
 
 The plugin automatically integrates with the following WordPress forms upon activation:
 
-| Form | Widget Hook | Validation Hook |
-|------------|-----------------|------------|
-| Comments | `comment_form_after_fields` | `preprocess_comment` |
-| Login | `login_form` | `wp_authenticate_user` |
-| Registration | `register_form` | `registration_errors` |
-| Lost Password | `lostpassword_form` | `lostpassword_post` |
-| Password Reset | `resetpass_form` | `validate_password_reset` |
+| Form                 | Widget Hook                               | Validation Hook                |
+| -------------------- | ----------------------------------------- | ------------------------------ |
+| Comments             | `comment_form_after_fields`               | `preprocess_comment`           |
+| Login                | `login_form`                              | `wp_authenticate_user`         |
+| Registration         | `register_form`                           | `registration_errors`          |
+| Lost Password        | `lostpassword_form`                       | `lostpassword_post`            |
+| Password Reset       | `resetpass_form`                          | `validate_password_reset`      |
 | WooCommerce checkout | `woocommerce_after_checkout_billing_form` | `woocommerce_checkout_process` |
-| Gravity Forms | `gform_submit_button` | `gform_validation` |
+| Gravity Forms        | `gform_submit_button`                     | `gform_validation`             |
 
 WooCommerce and Gravity Forms integrations are only active if the corresponding plugins are installed and active.
 
@@ -140,10 +147,10 @@ For cases where you want to trigger Cap verification without displaying a visibl
 [capconnect_programmatic field="cap-token" id="capconnect-token"]
 ```
 
-| Attribute | Description | Default |
-|----------|-------------|--------|
-| `field` | Name of the `<input type="hidden">` | `cap-token` |
-| `id` | HTML ID of the field | `capconnect-token` |
+| Attribute | Description                         | Default            |
+| --------- | ----------------------------------- | ------------------ |
+| `field`   | Name of the `<input type="hidden">` | `cap-token`        |
+| `id`      | HTML ID of the field                | `capconnect-token` |
 
 The shortcode enqueues the assets and inserts a hidden field. The endpoint and the field name are exposed in `window.CAPCONNECT_CONFIG`, available as soon as the script loads.
 
@@ -155,19 +162,19 @@ The legacy `[tpow_programmatic]` shortcode remains supported for existing conten
 [capconnect_programmatic field="cap-token" id="my-cap-token"]
 
 <script type="module">
-document.getElementById('submit-btn').addEventListener('click', async (e) => {
+  document.getElementById("submit-btn").addEventListener("click", async (e) => {
     e.preventDefault();
 
     const cap = new Cap({ apiEndpoint: window.CAPCONNECT_CONFIG.apiEndpoint });
 
-    cap.addEventListener('progress', (event) => {
-        console.log(`Solving… ${event.detail.progress}%`);
+    cap.addEventListener("progress", (event) => {
+      console.log(`Solving… ${event.detail.progress}%`);
     });
 
     const { token } = await cap.solve();
-    document.getElementById('my-cap-token').value = token;
-    e.target.closest('form').submit();
-});
+    document.getElementById("my-cap-token").value = token;
+    e.target.closest("form").submit();
+  });
 </script>
 ```
 
@@ -175,8 +182,8 @@ document.getElementById('submit-btn').addEventListener('click', async (e) => {
 
 ```javascript
 window.CAPCONNECT_CONFIG = {
-    apiEndpoint: "https://cap.example.com/your-site-key/",
-    tokenField:  "cap-token"
+  apiEndpoint: "https://cap.example.com/your-site-key/",
+  tokenField: "cap-token",
 };
 ```
 
@@ -236,6 +243,12 @@ Uninstalling via the WordPress interface automatically deletes all saved options
 - `capconnect_protect_gravityforms`
 - `capconnect_protect_forminator`
 
+## Changelog
+
+### 1.4.0
+
+- Added compatibility with Wordfence, the official Two-Factor plugin, and AIOS two-factor login flows.
+- Preserved the short-lived Cap verification across multi-step authentication and consumed it after successful login.
 
 ---
 

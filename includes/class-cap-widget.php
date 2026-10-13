@@ -122,6 +122,10 @@ class Capconnect_Widget
             (int) $widget_radius
         );
         wp_add_inline_style('capconnect-widget', $error_css);
+        wp_add_inline_style(
+            'capconnect-widget',
+            'body:has(#wfls-prompt-overlay, #wfls-prompt-wrapper, #wfls-token, #simba_two_factor_auth, input[name="two_factor_code"]) .cap-widget-wrapper { display: none !important; }'
+        );
 
         if (get_option('capconnect_mode', 'widget') === 'programmatic') {
             wp_add_inline_script('capconnect-widget', $this->getProgrammaticScript(), 'after');
@@ -130,6 +134,8 @@ class Capconnect_Widget
                 wp_add_inline_style('capconnect-widget', 'cap-widget::part(attribution){display:none}');
             }
         }
+
+        wp_add_inline_script('capconnect-widget', $this->getLoginCompatibilityScript(), 'after');
     }
 
     private function getProgrammaticScript(): string
@@ -282,6 +288,69 @@ class Capconnect_Widget
             showError(form, cfg.verificationFailedMsg || 'Captcha verification failed');
         });
     }, true);
+})();
+JS;
+    }
+
+    /**
+     * Keeps solved tokens available and hides visible widgets during 2FA prompts.
+     */
+    private function getLoginCompatibilityScript(): string
+    {
+        return <<<'JS'
+(function () {
+    var token = '';
+
+    /**
+     * Returns whether a supported plugin is currently showing its 2FA input.
+     */
+    function isTwoFactorPromptVisible() {
+        return !!document.querySelector('#wfls-prompt-overlay, #wfls-prompt-wrapper, #wfls-token, #simba_two_factor_auth, input[name="two_factor_code"]');
+    }
+
+    /**
+     * Prevents the completed visible widget from overlapping a 2FA submit button.
+     */
+    function syncWidgetVisibility() {
+        var hideWidget = isTwoFactorPromptVisible();
+        document.querySelectorAll('.cap-widget-wrapper').forEach(function (wrapper) {
+            if (hideWidget) {
+                wrapper.hidden = true;
+                return;
+            }
+
+            wrapper.hidden = false;
+        });
+    }
+
+    document.addEventListener('solve', function (event) {
+        if (event.target && event.target.matches && event.target.matches('cap-widget') && event.detail && event.detail.token) {
+            token = event.detail.token;
+        }
+    });
+
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!token || !form || !form.matches || !form.matches('#loginform, form.login, .woocommerce form.login')) {
+            return;
+        }
+
+        if (form.querySelector('input[name="cap-token"]')) {
+            return;
+        }
+
+        var replacement = document.createElement('input');
+        replacement.type = 'hidden';
+        replacement.name = 'cap-token';
+        replacement.value = token;
+        form.appendChild(replacement);
+    }, true);
+
+    syncWidgetVisibility();
+    new MutationObserver(syncWidgetVisibility).observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
 })();
 JS;
     }

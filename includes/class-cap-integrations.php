@@ -11,6 +11,7 @@ class Capconnect_Integrations
     private Capconnect_Verifier $verifier;
     private Capconnect_Widget $widget;
     private Capconnect_Login_Recovery $loginRecovery;
+    private Capconnect_Login_Proof $loginProof;
 
     /**
      * Creates the form integrations and their login recovery dependency.
@@ -20,6 +21,7 @@ class Capconnect_Integrations
         $this->verifier      = new Capconnect_Verifier();
         $this->widget        = new Capconnect_Widget();
         $this->loginRecovery = $loginRecovery ?? new Capconnect_Login_Recovery();
+        $this->loginProof    = new Capconnect_Login_Proof();
     }
 
     public function init(): void
@@ -58,6 +60,9 @@ class Capconnect_Integrations
         }
         add_action('login_form', [$this, 'renderWidgetLogin']);
         add_filter('wp_authenticate_user', [$this, 'validateLoginToken'], 10, 2);
+        add_action('wp_login', [$this, 'consumeLoginProof'], PHP_INT_MAX, 2);
+        add_action('login_form_validate_2fa', [$this, 'validateTwoFactorLoginProof'], 1);
+        add_action('two_factor_user_authenticated', [$this, 'consumeTwoFactorLoginProof'], 10, 2);
     }
 
     private function initRegisterIntegration(): void
@@ -224,7 +229,7 @@ class Capconnect_Integrations
     }
 
     /**
-     * Validates the login captcha or consumes a matching administrator recovery session.
+     * Validates the login captcha or reuses the proof for the current login transaction.
      */
     public function validateLoginToken(\WP_User|\WP_Error $user, string $password): \WP_User|\WP_Error
     {
@@ -232,7 +237,16 @@ class Capconnect_Integrations
             return $user;
         }
 
+        if ($this->isWordfenceAuthenticationPreflight()) {
+            return $user;
+        }
+
+        if ($this->loginProof->hasForUser($user)) {
+            return $user;
+        }
+
         if ($this->loginRecovery->consumeForUser($user)) {
+            $this->loginProof->issue($user);
             return $user;
         }
 
@@ -246,7 +260,48 @@ class Capconnect_Integrations
             );
         }
 
+        $this->loginProof->issue($user);
+
         return $user;
+    }
+
+    /**
+     * Requires the initial captcha proof before Two-Factor validates its second step.
+     */
+    public function validateTwoFactorLoginProof(): void
+    {
+        $userId = isset($_REQUEST['wp-auth-id']) ? absint($_REQUEST['wp-auth-id']) : 0;
+        $user = $userId > 0 ? get_user_by('id', $userId) : false;
+
+        if ($user instanceof \WP_User && $this->loginProof->hasForUser($user)) {
+            return;
+        }
+
+        wp_die(
+            esc_html($this->getVerificationFailedMessage()),
+            esc_html__('Cap Verification Failed', 'capconnect-for-wp'),
+            ['response' => 403, 'back_link' => true]
+        );
+    }
+
+    /**
+     * Consumes the proof after WordPress completes a non-interstitial login.
+     */
+    public function consumeLoginProof(string $userLogin, \WP_User $user): void
+    {
+        if ($this->loginProof->hasForUser($user)) {
+            $this->loginProof->consume();
+        }
+    }
+
+    /**
+     * Consumes the proof after the official Two-Factor plugin completes authentication.
+     */
+    public function consumeTwoFactorLoginProof(\WP_User $user, $provider): void
+    {
+        if ($this->loginProof->hasForUser($user)) {
+            $this->loginProof->consume();
+        }
     }
 
     public function validateRegisterToken(\WP_Error $errors, string $sanitizedUserLogin, string $userEmail): \WP_Error
@@ -372,6 +427,16 @@ class Capconnect_Integrations
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the surrounding WordPress/WooCommerce context before this hook runs.
         return sanitize_text_field(wp_unslash((string) ($_POST['cap-token'] ?? '')));
+    }
+
+    /**
+     * Detects Wordfence's credential preflight, which must not consume a captcha.
+     */
+    private function isWordfenceAuthenticationPreflight(): bool
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Wordfence validates its AJAX nonce before invoking authentication.
+        $action = isset($_POST['action']) ? sanitize_key(wp_unslash($_POST['action'])) : '';
+        return wp_doing_ajax() && $action === 'wordfence_ls_authenticate';
     }
 
     private function isWooCommerceActive(): bool
