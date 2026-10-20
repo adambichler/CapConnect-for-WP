@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,7 +28,7 @@ This plugin communicates with your own self-hosted Cap server to verify proof-of
 
 **WebAssembly module**
 
-The Cap widget uses a WebAssembly (WASM) module to perform the proof-of-work computation in the browser. This plugin bundles the WASM file locally (`assets/wasm/cap_wasm_bg.wasm`) — no external CDN is required at runtime.
+The Cap widget uses WebAssembly (WASM) for proof-of-work. This plugin bundles the Cap widget 0.1.58 and both WASM solvers locally (`assets/wasm/cap_wasm_bg.wasm` and `assets/wasm/hashwx.wasm`) — no external CDN is required at runtime.
 
 **Features:**
 
@@ -111,6 +111,10 @@ Use `[capconnect_widget]` to embed the Cap widget in any page or custom form.
 The legacy `[tpow_widget]` and `[tpow_programmatic]` shortcodes continue to work for existing content.
 
 == Changelog ==
+
+= 1.4.1 =
+* Updated the bundled Cap widget to 0.1.58 and added local HashWX WASM support.
+* Preserved the optional shortcode CSP nonce for the current Cap widget script and styles.
 
 = 1.4.0 =
 * Added compatibility with Wordfence, the official Two-Factor plugin, and AIOS two-factor login flows.

@@ -3,7 +3,7 @@
  * Plugin Name:       CapConnect for WP
  * Plugin URI:        https://github.com/adambichler/CapConnect-for-WP
  * Description:       Integrates the open-source TryCap widget into WordPress comments, login, registration, lost password, WooCommerce checkout, and Gravity Forms.
- * Version:           1.4.0
+ * Version:           1.4.1
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Adam Bichler
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('CAPCONNECT_VERSION', '1.4.0');
+define('CAPCONNECT_VERSION', '1.4.1');
 define('CAPCONNECT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CAPCONNECT_PLUGIN_URL', plugin_dir_url(__FILE__));
 

@@ -26,7 +26,7 @@ The current `capconnect_*` options, hooks, shortcodes, and `window.CAPCONNECT_CO
 2. Activate the plugin from **Plugins** in the WordPress administration panel
 3. Go to **Settings > CapConnect** and fill in the Instance URL, Site Key, and Secret Key
 
-The plugin includes all necessary assets (JS, CSS, WASM). No extra build step or download is required.
+The plugin includes the version-pinned Cap widget 0.1.58 and both proof-of-work solvers (SHA-256 and HashWX) as local JS/WASM assets. No extra build step, runtime CDN, or download is required.
 
 ---
 

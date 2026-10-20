@@ -16,6 +16,9 @@ class Capconnect_Widget
         add_shortcode('tpow_programmatic', [$this, 'renderProgrammaticShortcode']);
     }
 
+    /**
+     * Enqueues the pinned Cap widget and local WASM solver assets.
+     */
     public function enqueueAssets(): void
     {
         $failed_label = sanitize_text_field(get_option('capconnect_verification_failed_label', ''));
@@ -31,9 +34,12 @@ class Capconnect_Widget
             ['strategy' => 'defer', 'in_footer' => true]
         );
 
+        $assetConfig = 'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(CAPCONNECT_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';'
+            . 'window.CAP_CUSTOM_HASHWX_URL = ' . wp_json_encode(CAPCONNECT_PLUGIN_URL . 'assets/wasm/hashwx.wasm') . ';';
+
         wp_add_inline_script(
             'capconnect-widget',
-            'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(CAPCONNECT_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';'
+            $assetConfig
             . 'window.CAPCONNECT_CONFIG = ' . wp_json_encode([
                 'apiEndpoint' => Capconnect_Settings::getEndpoint(),
                 'tokenField'  => 'cap-token',
@@ -414,6 +420,9 @@ JS;
             . '</div>';
     }
 
+    /**
+     * Renders the visible widget shortcode with its optional CSP nonce.
+     */
     public function renderShortcode(array $atts): string
     {
         if (! Capconnect_Settings::isConfigured()) {
@@ -421,7 +430,6 @@ JS;
         }
 
         $atts = shortcode_atts(['nonce' => null], $atts, 'capconnect_widget');
-
         $this->enqueueAssets();
 
         return $this->renderWidget($atts['nonce'] ?: null);
