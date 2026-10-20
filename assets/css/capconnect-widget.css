@@ -47,16 +47,6 @@ cap-widget {
   --cap-invalid-ring-color: #37415133; /* urg_gray-700 / 20% */
 }
 
-/* ── Cap attribution link (optional) ───────────────────────────────
- * The widget displays a "Cap" link pointing to trycap.dev.
- * The Apache 2.0 license does not require displaying it in the UI.
- * Uncomment the block below to hide it.
- *
- * cap-widget::part(attribution) {
- *     display: none;
- * }
- */
-
 .cap-widget-wrapper {
   display: block !important;
   margin-bottom: 16px !important;

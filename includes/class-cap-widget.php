@@ -35,7 +35,8 @@ class Capconnect_Widget
         );
 
         $assetConfig = 'window.CAP_CUSTOM_WASM_URL = ' . wp_json_encode(CAPCONNECT_PLUGIN_URL . 'assets/wasm/cap_wasm_bg.wasm') . ';'
-            . 'window.CAP_CUSTOM_HASHWX_URL = ' . wp_json_encode(CAPCONNECT_PLUGIN_URL . 'assets/wasm/hashwx.wasm') . ';';
+            . 'window.CAP_CUSTOM_HASHWX_URL = ' . wp_json_encode(CAPCONNECT_PLUGIN_URL . 'assets/wasm/hashwx.wasm') . ';'
+            . 'window.CAPCONNECT_HIDE_ATTRIBUTION = ' . wp_json_encode((bool) get_option('capconnect_hide_attribution', false)) . ';';
 
         wp_add_inline_script(
             'capconnect-widget',
@@ -135,10 +136,6 @@ class Capconnect_Widget
 
         if (get_option('capconnect_mode', 'widget') === 'programmatic') {
             wp_add_inline_script('capconnect-widget', $this->getProgrammaticScript(), 'after');
-        } else {
-            if (get_option('capconnect_hide_attribution', false)) {
-                wp_add_inline_style('capconnect-widget', 'cap-widget::part(attribution){display:none}');
-            }
         }
 
         wp_add_inline_script('capconnect-widget', $this->getLoginCompatibilityScript(), 'after');
