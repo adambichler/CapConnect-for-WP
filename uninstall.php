@@ -20,6 +20,9 @@ $option_suffixes = [
     'checkbox_border_width', 'checkbox_border_radius', 'spinner_color', 'spinner_background',
     'error_background', 'error_color', 'error_border_color', 'protect_login', 'protect_register',
     'protect_lostpassword', 'protect_comments', 'protect_woocommerce', 'protect_gravityforms',
+    'woocommerce_enabled', 'protect_woocommerce_blocks', 'protect_woocommerce_login',
+    'protect_woocommerce_checkout_login', 'protect_woocommerce_register', 'protect_woocommerce_checkout_register',
+    'protect_woocommerce_after_register', 'protect_woocommerce_lostpassword', 'protect_woocommerce_resetpassword',
     'protect_forminator', 'initial_state_label', 'initial_state_label_translations',
     'verifying_label', 'verifying_label_translations', 'solved_label', 'solved_label_translations',
     'required_label', 'required_label_translations', 'verified_aria_label',
@@ -38,3 +41,4 @@ foreach (['capconnect_', 'tpow_'] as $prefix) {
 }
 
 delete_option('capconnect_prefix_migration_version');
+delete_metadata('user', 0, 'capconnect_woocommerce_notice_dismissed_' . get_current_blog_id(), '', true);

@@ -693,3 +693,71 @@ msgstr ""
 #: includes/class-cap-integrations.php:198
 msgid "Cap Verification Failed"
 msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Integrations"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "WooCommerce"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Protect WooCommerce"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Classic checkout"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Block checkout"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Login: My Account"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Login: Checkout"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Registration: My Account"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Registration: Checkout"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Registration: After checkout"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Lost password"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Reset password"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Choose which WooCommerce areas to protect. Checkout protection applies to guests only. Account creation during checkout can be protected independently. Express payments require a valid token when protection applies."
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Select which forms and integrations you want to protect using Cap."
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "WooCommerce is active, but CapConnect protection is not enabled. Enable Protect WooCommerce in Integrations and save the settings to protect its forms."
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Open integrations"
+msgstr ""
+
+#: includes/class-cap-settings.php
+msgid "Dismiss notice"
+msgstr ""

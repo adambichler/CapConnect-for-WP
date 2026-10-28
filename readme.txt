@@ -8,7 +8,7 @@ Stable tag: 1.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, login, registration, lost password, WooCommerce checkout, and Gravity Forms.
+Integrates Cap (self-hosted proof-of-work CAPTCHA) into WordPress comments, login, registration, lost password, WooCommerce checkout and customer accounts, and Gravity Forms.
 
 == Description ==
 
@@ -36,7 +36,7 @@ The Cap widget uses WebAssembly (WASM) for proof-of-work. This plugin bundles th
 * Protects login form
 * Protects registration form
 * Protects lost password and password reset forms
-* Protects WooCommerce checkout (if WooCommerce is active)
+* Protects WooCommerce guest checkout (classic and Blocks), login, registration, and password forms with independent controls
 * Protects Gravity Forms (if Gravity Forms is active)
 * Shortcode `[capconnect_widget]` for use in any page or form builder
 * Shortcode `[capconnect_programmatic]` for programmatic Cap usage (headless mode)
@@ -56,7 +56,7 @@ A self-hosted Cap instance is required. See the [Cap documentation](https://gith
 
 == Configuration ==
 
-After activation, navigate to **Settings > CapConnect**. The settings are divided into three tabs:
+After activation, navigate to **Settings > CapConnect**. The settings are organized into the following tabs:
 
 * **Connection Tab:**
     * **Verification Mode** — Toggle between visible widget and programmatic (invisible) mode.
@@ -66,8 +66,14 @@ After activation, navigate to **Settings > CapConnect**. The settings are divide
     * **Timeout** — Seconds before abandoning the request to `/siteverify` (default: `5`).
     * **Fail Open** — Allow requests through when the Cap server is unreachable.
     * **Alert Email** — Email address to receive failure notifications. A cron job checks connection hourly, and frontend failures trigger real-time alerts.
-* **Forms Tab:**
-    * Enable or disable protection for: Login Form, Registration Form, Lost Password Form, Comments Form, WooCommerce Checkout, and Gravity Forms.
+* **Integrations Tab:**
+    * Enable or disable protection for WordPress forms, Gravity Forms, and Forminator.
+    * **Protect WooCommerce** — Always visible and disabled when WooCommerce is inactive; enables a dedicated WooCommerce tab when available.
+* **WooCommerce Tab:**
+    * Independently protect classic checkout, Block Checkout, My Account login, checkout login, My Account registration, checkout registration, post-order registration, lost password, and password reset.
+    * Checkout protection applies to guests only. Checkout registration can be protected even when order protection is off; enabling both requires only one verification per attempt.
+    * WooCommerce protection is off until the integration switch is enabled. All individual areas are selected by default; you can disable them independently. Turning off the integration switch preserves individual settings.
+    * Express guest payments require a valid token when protection applies. Additional account or social-login plugins require separate integrations.
 * **Styling Tab:**
     * Customize background colors, text colors, borders, checkmark, and spinner styles for the visible widget (only active in Widget mode).
     * **Hide Attribution Link** — Toggle to hide the "Cap" link at the bottom-right of the widget.
@@ -98,7 +104,7 @@ No. Cap is a proof-of-work system: it runs a computation in the browser and does
 
 = Is WooCommerce support automatic? =
 
-Yes. If WooCommerce is active when the plugin loads, the Cap widget is automatically added to the checkout billing form.
+Enable **Protect WooCommerce** under **Settings > CapConnect > Integrations**, review the selected areas in the WooCommerce tab, and save. All WooCommerce areas are selected by default and can be disabled independently.
 
 = Is Gravity Forms support automatic? =
 

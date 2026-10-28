@@ -8,6 +8,7 @@ if (! defined('ABSPATH')) {
 
 class Capconnect_Widget
 {
+    private static bool $assetsEnqueued = false;
     public function init(): void
     {
         add_shortcode('capconnect_widget', [$this, 'renderShortcode']);
@@ -21,6 +22,10 @@ class Capconnect_Widget
      */
     public function enqueueAssets(): void
     {
+        if (self::$assetsEnqueued) {
+            return;
+        }
+        self::$assetsEnqueued = true;
         $failed_label = sanitize_text_field(get_option('capconnect_verification_failed_label', ''));
         if ($failed_label === '') {
             $failed_label = __('Captcha verification failed', 'capconnect-for-wp');
@@ -44,6 +49,7 @@ class Capconnect_Widget
             . 'window.CAPCONNECT_CONFIG = ' . wp_json_encode([
                 'apiEndpoint' => Capconnect_Settings::getEndpoint(),
                 'tokenField'  => 'cap-token',
+                'mode' => get_option('capconnect_mode', 'widget'),
                 'ajaxUrl'     => admin_url('admin-ajax.php'),
                 'nonce'       => wp_create_nonce('capconnect_report_error'),
                 'verificationFailedMsg' => $failed_label,
@@ -134,230 +140,11 @@ class Capconnect_Widget
             'body:has(#wfls-prompt-overlay, #wfls-prompt-wrapper, #wfls-token, #simba_two_factor_auth, input[name="two_factor_code"]) .cap-widget-wrapper { display: none !important; }'
         );
 
-        if (get_option('capconnect_mode', 'widget') === 'programmatic') {
-            wp_add_inline_script('capconnect-widget', $this->getProgrammaticScript(), 'after');
-        }
-
-        wp_add_inline_script('capconnect-widget', $this->getLoginCompatibilityScript(), 'after');
+        wp_enqueue_script('capconnect-forms', CAPCONNECT_PLUGIN_URL . 'assets/js/capconnect-forms.js',
+            ['capconnect-widget'], CAPCONNECT_VERSION, true);
     }
 
-    private function getProgrammaticScript(): string
-    {
-        return <<<'JS'
-(function () {
-    var cfg = window.CAPCONNECT_CONFIG;
-    if (!cfg || !cfg.apiEndpoint || typeof window.Cap === 'undefined') return;
-    var cap = new window.Cap({ apiEndpoint: cfg.apiEndpoint });
-
-    // The vendor stylesheet forces cap-widget to display, so override it for programmatic mode.
-    if (!cap.widget || !cap.widget.style || typeof cap.widget.style.setProperty !== 'function' || typeof cap.widget.setAttribute !== 'function') {
-        console.error('[cap] Programmatic widget is unavailable.');
-        return;
-    }
-    cap.widget.style.setProperty('display', 'none', 'important');
-    cap.widget.setAttribute('aria-hidden', 'true');
-
-    var tokenPromise = cap.solve();
-    var solveError = null;
-
-    /**
-     * Returns the programmatic token fields, including custom shortcode fields.
-     */
-    function getProgrammaticFields(root) {
-        var scope = root || document;
-        var fields = scope.querySelectorAll('.capconnect-programmatic-wrapper input[type="hidden"], .tpow-programmatic-wrapper input[type="hidden"]');
-
-        if (!fields.length && cfg.tokenField) {
-            fields = scope.querySelectorAll('input[name="' + cfg.tokenField + '"]');
-        }
-
-        return fields;
-    }
-
-    /**
-     * Returns the programmatic token field belonging to a form.
-     */
-    function getFormField(form) {
-        var fields = getProgrammaticFields(form);
-        return fields.length ? fields[0] : null;
-    }
-
-    /**
-     * Displays a verification error in the supplied form.
-     */
-    function showError(form, message) {
-        var wrapper = form.querySelector('.capconnect-programmatic-wrapper, .tpow-programmatic-wrapper');
-        var errDiv = wrapper ? wrapper.querySelector('.capconnect-error-message, .tpow-error-message') : null;
-        if (!errDiv) {
-            var field = getFormField(form);
-            if (field) {
-                errDiv = document.createElement('div');
-                errDiv.className = 'capconnect-error-message tpow-error-message';
-                errDiv.setAttribute('role', 'alert');
-                if (field.parentNode) {
-                    field.parentNode.insertBefore(errDiv, field.nextSibling);
-                } else {
-                    form.appendChild(errDiv);
-                }
-            } else {
-                errDiv = document.createElement('div');
-                errDiv.className = 'capconnect-error-message tpow-error-message';
-                errDiv.setAttribute('role', 'alert');
-                form.appendChild(errDiv);
-            }
-        }
-        if (errDiv) {
-            errDiv.textContent = message;
-            errDiv.style.display = 'block';
-        }
-
-        var event = new CustomEvent('capconnectVerificationFailed', {
-            detail: { form: form, message: message, error: solveError },
-            bubbles: true,
-            cancelable: true
-        });
-        form.dispatchEvent(event);
-        form.dispatchEvent(new CustomEvent('tpowVerificationFailed', {
-            detail: event.detail,
-            bubbles: true,
-            cancelable: true
-        }));
-    }
-
-    /**
-     * Displays an initial solve error in every affected form.
-     */
-    function showInitialErrors(message) {
-        var forms = [];
-        getProgrammaticFields().forEach(function (field) {
-            var form = field.form || field.closest('form');
-            if (form && forms.indexOf(form) === -1) {
-                forms.push(form);
-            }
-        });
-
-        forms.forEach(function (form) {
-            showError(form, message);
-        });
-    }
-
-    /**
-     * Applies a token to all programmatic fields and clears their errors.
-     */
-    function applyTokenAndClearErrors(token) {
-        getProgrammaticFields().forEach(function (f) {
-            f.value = token;
-            var wrapper = f.closest('.capconnect-programmatic-wrapper, .tpow-programmatic-wrapper');
-            if (wrapper) {
-                var errDiv = wrapper.querySelector('.capconnect-error-message, .tpow-error-message');
-                if (errDiv) {
-                    errDiv.style.display = 'none';
-                    errDiv.textContent = '';
-                }
-            }
-        });
-    }
-
-    tokenPromise.then(function (r) {
-        applyTokenAndClearErrors(r.token);
-    }).catch(function (err) {
-        solveError = err;
-        showInitialErrors(cfg.verificationFailedMsg || 'Captcha verification failed');
-    });
-
-    document.addEventListener('submit', function (e) {
-        var field = getFormField(e.target);
-        if (!field) return;
-        if (field.value) return;
-
-        e.preventDefault();
-        var form = e.target;
-
-        // If the previous attempt failed, retry solving
-        if (solveError) {
-            solveError = null;
-            tokenPromise = cap.solve();
-            tokenPromise.then(function (r) {
-                applyTokenAndClearErrors(r.token);
-            }).catch(function (err) {
-                solveError = err;
-            });
-        }
-
-        tokenPromise.then(function (r) {
-            field.value = r.token;
-            form.requestSubmit ? form.requestSubmit() : form.submit();
-        }).catch(function (err) {
-            showError(form, cfg.verificationFailedMsg || 'Captcha verification failed');
-        });
-    }, true);
-})();
-JS;
-    }
-
-    /**
-     * Keeps solved tokens available and hides visible widgets during 2FA prompts.
-     */
-    private function getLoginCompatibilityScript(): string
-    {
-        return <<<'JS'
-(function () {
-    var token = '';
-
-    /**
-     * Returns whether a supported plugin is currently showing its 2FA input.
-     */
-    function isTwoFactorPromptVisible() {
-        return !!document.querySelector('#wfls-prompt-overlay, #wfls-prompt-wrapper, #wfls-token, #simba_two_factor_auth, input[name="two_factor_code"]');
-    }
-
-    /**
-     * Prevents the completed visible widget from overlapping a 2FA submit button.
-     */
-    function syncWidgetVisibility() {
-        var hideWidget = isTwoFactorPromptVisible();
-        document.querySelectorAll('.cap-widget-wrapper').forEach(function (wrapper) {
-            if (hideWidget) {
-                wrapper.hidden = true;
-                return;
-            }
-
-            wrapper.hidden = false;
-        });
-    }
-
-    document.addEventListener('solve', function (event) {
-        if (event.target && event.target.matches && event.target.matches('cap-widget') && event.detail && event.detail.token) {
-            token = event.detail.token;
-        }
-    });
-
-    document.addEventListener('submit', function (event) {
-        var form = event.target;
-        if (!token || !form || !form.matches || !form.matches('#loginform, form.login, .woocommerce form.login')) {
-            return;
-        }
-
-        if (form.querySelector('input[name="cap-token"]')) {
-            return;
-        }
-
-        var replacement = document.createElement('input');
-        replacement.type = 'hidden';
-        replacement.name = 'cap-token';
-        replacement.value = token;
-        form.appendChild(replacement);
-    }, true);
-
-    syncWidgetVisibility();
-    new MutationObserver(syncWidgetVisibility).observe(document.documentElement, {
-        childList: true,
-        subtree: true
-    });
-})();
-JS;
-    }
-
+    /** Renders a translated visible widget with an optional CSP nonce. */
     public function renderWidget(?string $nonce = null): string
     {
         $endpoint = esc_attr(Capconnect_Settings::getEndpoint());

@@ -791,3 +791,71 @@ msgstr "Cap-Verifizierung fehlgeschlagen"
 #~ msgstr ""
 #~ "Prüft, ob die Endpunkt-URL erreichbar ist und eine gültige "
 #~ "Herausforderung zurückgibt. Speichern Sie zuerst Ihre Einstellungen."
+
+#: includes/class-cap-settings.php
+msgid "Integrations"
+msgstr "Integrationen"
+
+#: includes/class-cap-settings.php
+msgid "WooCommerce"
+msgstr "WooCommerce"
+
+#: includes/class-cap-settings.php
+msgid "Protect WooCommerce"
+msgstr "WooCommerce schützen"
+
+#: includes/class-cap-settings.php
+msgid "Classic checkout"
+msgstr "Klassische Kasse"
+
+#: includes/class-cap-settings.php
+msgid "Block checkout"
+msgstr "Block-Kasse"
+
+#: includes/class-cap-settings.php
+msgid "Login: My Account"
+msgstr "Login: Mein Konto"
+
+#: includes/class-cap-settings.php
+msgid "Login: Checkout"
+msgstr "Login: Kasse"
+
+#: includes/class-cap-settings.php
+msgid "Registration: My Account"
+msgstr "Registrierung: Mein Konto"
+
+#: includes/class-cap-settings.php
+msgid "Registration: Checkout"
+msgstr "Registrierung: Kasse"
+
+#: includes/class-cap-settings.php
+msgid "Registration: After checkout"
+msgstr "Registrierung: nach Bestellung"
+
+#: includes/class-cap-settings.php
+msgid "Lost password"
+msgstr "Passwort vergessen"
+
+#: includes/class-cap-settings.php
+msgid "Reset password"
+msgstr "Passwort zurücksetzen"
+
+#: includes/class-cap-settings.php
+msgid "Choose which WooCommerce areas to protect. Checkout protection applies to guests only. Account creation during checkout can be protected independently. Express payments require a valid token when protection applies."
+msgstr "Wähle die zu schützenden WooCommerce-Bereiche aus. Der Kassenschutz gilt nur für Gäste. Die Kontoerstellung an der Kasse kann unabhängig geschützt werden. Express-Zahlungen benötigen ein gültiges Token, wenn der Schutz greift."
+
+#: includes/class-cap-settings.php
+msgid "Select which forms and integrations you want to protect using Cap."
+msgstr "Wähle aus, welche Formulare und Integrationen du mit Cap schützen möchtest."
+
+#: includes/class-cap-settings.php
+msgid "WooCommerce is active, but CapConnect protection is not enabled. Enable Protect WooCommerce in Integrations and save the settings to protect its forms."
+msgstr "WooCommerce ist aktiv, aber der Schutz durch CapConnect ist noch nicht eingeschaltet. Aktiviere unter Integrationen die Option WooCommerce schützen und speichere die Einstellungen, um die Formulare zu schützen."
+
+#: includes/class-cap-settings.php
+msgid "Open integrations"
+msgstr "Integrationen öffnen"
+
+#: includes/class-cap-settings.php
+msgid "Dismiss notice"
+msgstr "Hinweis ausblenden"

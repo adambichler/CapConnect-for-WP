@@ -21,6 +21,7 @@ jobs:
           rsync -a \
             --exclude='.git' \
             --exclude='.github' \
+            --exclude='tests' \
             --exclude='.claude' \
             --exclude='.distignore' \
             --exclude='.gitignore' \

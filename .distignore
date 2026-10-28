@@ -4,3 +4,4 @@
 .distignore
 README.md
 LOCAL_FORK_NOTES.txt
+tests

@@ -52,6 +52,8 @@ class Capconnect_Settings
         add_action('admin_notices', [$this, 'displayConnectionFailedNotice']);
         add_action('admin_notices', [$this, 'displayCredentialsMissingNotice']);
         add_action('admin_notices', [$this, 'displayLoginCaptchaDisabledNotice']);
+        add_action('admin_notices', [$this, 'displayWooCommerceInactiveNotice']);
+        add_action('admin_post_capconnect_dismiss_woocommerce_notice', [$this, 'dismissWooCommerceInactiveNotice']);
 
         // Verify the final credential set once and reset alert throttling when its recipient changes.
         add_action('update_option_capconnect_instance_url', [$this, 'handleCredentialUpdate']);
@@ -235,6 +237,7 @@ class Capconnect_Settings
         add_action("admin_print_scripts-{$hook}", [$this, 'enqueueAdminScripts']);
     }
 
+    /** Registers sanitized settings and the independently selectable integration areas. */
     public function registerSettings(): void
     {
         register_setting('capconnect_settings_group', 'capconnect_instance_url', [
@@ -400,11 +403,18 @@ class Capconnect_Settings
             'default'           => true,
         ]);
 
-        register_setting('capconnect_settings_group', 'capconnect_protect_woocommerce', [
-            'type'              => 'boolean',
+        register_setting('capconnect_settings_group', 'capconnect_woocommerce_enabled', [
+            'type' => 'boolean',
             'sanitize_callback' => 'wp_validate_boolean',
-            'default'           => true,
+            'default' => false,
         ]);
+        foreach (Capconnect_WooCommerce::OPTIONS as $option) {
+            register_setting('capconnect_settings_group', $option, [
+                'type' => 'boolean',
+                'sanitize_callback' => 'wp_validate_boolean',
+                'default' => true,
+            ]);
+        }
 
         register_setting('capconnect_settings_group', 'capconnect_protect_gravityforms', [
             'type'              => 'boolean',
@@ -611,17 +621,33 @@ class Capconnect_Settings
             ]
         );
 
-        add_settings_field(
-            'capconnect_protect_woocommerce',
-            __('WooCommerce Checkout', 'capconnect-for-wp'),
-            [$this, 'renderCheckboxField'],
-            'capconnect-settings',
-            'capconnect_forms_section',
-            [
-                'field' => 'capconnect_protect_woocommerce',
-                'label' => __('Protect the WooCommerce checkout form', 'capconnect-for-wp'),
-            ]
-        );
+        add_settings_field('capconnect_woocommerce_enabled', __('WooCommerce', 'capconnect-for-wp'),
+            [$this, 'renderCheckboxField'], 'capconnect-settings', 'capconnect_forms_section', [
+                'field' => 'capconnect_woocommerce_enabled',
+                'label' => __('Protect WooCommerce', 'capconnect-for-wp'),
+            ]);
+
+        if (class_exists('WooCommerce')) {
+            add_settings_section('capconnect_woocommerce_section', __('WooCommerce', 'capconnect-for-wp'),
+                [$this, 'renderWooCommerceDescription'], 'capconnect-settings');
+            $labels = [
+                'checkout' => __('Classic checkout', 'capconnect-for-wp'),
+                'blocks' => __('Block checkout', 'capconnect-for-wp'),
+                'login' => __('Login: My Account', 'capconnect-for-wp'),
+                'checkout_login' => __('Login: Checkout', 'capconnect-for-wp'),
+                'register' => __('Registration: My Account', 'capconnect-for-wp'),
+                'checkout_register' => __('Registration: Checkout', 'capconnect-for-wp'),
+                'after_register' => __('Registration: After checkout', 'capconnect-for-wp'),
+                'lost' => __('Lost password', 'capconnect-for-wp'),
+                'reset' => __('Reset password', 'capconnect-for-wp'),
+            ];
+            foreach (Capconnect_WooCommerce::OPTIONS as $area => $option) {
+                add_settings_field($option, $labels[$area], [$this, 'renderCheckboxField'],
+                    'capconnect-settings', 'capconnect_woocommerce_section', [
+                        'field' => $option, 'label' => $labels[$area], 'default' => true,
+                    ]);
+            }
+        }
 
         add_settings_field(
             'capconnect_protect_gravityforms',
@@ -901,7 +927,7 @@ class Capconnect_Settings
     }
 
     /**
-     * Renders the plugin settings and connection-test safeguards.
+     * Renders accessible settings tabs, conditional WooCommerce controls, and connection safeguards.
      */
     public function renderPage(): void
     {
@@ -944,12 +970,15 @@ class Capconnect_Settings
                 }
             </style>
 
-            <h2 class="nav-tab-wrapper capconnect-nav-tab-wrapper">
+            <div class="nav-tab-wrapper capconnect-nav-tab-wrapper" role="tablist" aria-label="CapConnect">
                 <a href="#connection" class="nav-tab nav-tab-active" data-tab="connection"><?php esc_html_e('Connection', 'capconnect-for-wp'); ?></a>
-                <a href="#forms" class="nav-tab" data-tab="forms"><?php esc_html_e('Forms', 'capconnect-for-wp'); ?></a>
+                <a href="#forms" class="nav-tab" data-tab="forms"><?php esc_html_e('Integrations', 'capconnect-for-wp'); ?></a>
+                <?php if (class_exists('WooCommerce')) : ?>
+                    <a href="#woocommerce" class="nav-tab" data-tab="woocommerce"<?php echo Capconnect_WooCommerce::isEnabled() ? '' : ' hidden style="display: none;"'; ?>><?php esc_html_e('WooCommerce', 'capconnect-for-wp'); ?></a>
+                <?php endif; ?>
                 <a href="#styling" class="nav-tab" data-tab="styling"><?php esc_html_e('Styling', 'capconnect-for-wp'); ?></a>
                 <a href="#labels" class="nav-tab" data-tab="labels"><?php esc_html_e('Labels', 'capconnect-for-wp'); ?></a>
-            </h2>
+            </div>
 
             <form id="capconnect-settings-form" method="post" action="options.php">
                 <?php settings_fields('capconnect_settings_group'); ?>
@@ -973,6 +1002,16 @@ class Capconnect_Settings
                 <div id="capconnect-tab-forms" class="capconnect-tab-content" style="display: none;">
                     <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_forms_section'); ?>
                 </div>
+
+                <?php if (class_exists('WooCommerce')) : ?>
+                    <div id="capconnect-tab-woocommerce" class="capconnect-tab-content" style="display: none;">
+                        <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_woocommerce_section'); ?>
+                    </div>
+                <?php else : ?>
+                    <?php foreach (array_values(Capconnect_WooCommerce::OPTIONS) as $option) : ?>
+                        <input type="hidden" name="<?php echo esc_attr($option); ?>" value="<?php echo (int) get_option($option, true); ?>" />
+                    <?php endforeach; ?>
+                <?php endif; ?>
 
                 <!-- Styling Tab -->
                 <div id="capconnect-tab-styling" class="capconnect-tab-content" style="display: none;">
@@ -1015,7 +1054,7 @@ class Capconnect_Settings
                 var btn    = document.getElementById('capconnect-test-btn');
                 var result = document.getElementById('capconnect-test-result');
                 var settingsForm = document.getElementById('capconnect-settings-form');
-                var loginProtection = settingsForm.querySelector('input[name="capconnect_protect_login"]');
+                var loginProtection = settingsForm.querySelector('input[type="checkbox"][name="capconnect_protect_login"]');
                 var initialLoginProtection = <?php echo wp_json_encode((bool) get_option('capconnect_protect_login', true)); ?>;
                 var initialCredentials = {
                     instanceUrl: <?php echo wp_json_encode((string) get_option('capconnect_instance_url', '')); ?>,
@@ -1091,42 +1130,59 @@ class Capconnect_Settings
             </script>
             <script>
             jQuery(function ($) {
-                // Tab switching logic
                 var $tabs = $('.capconnect-nav-tab-wrapper .nav-tab');
                 var $tabContents = $('.capconnect-tab-content');
+                var $wooToggle = $('input[type="checkbox"][name="capconnect_woocommerce_enabled"]');
+                $('.capconnect-nav-tab-wrapper').attr('role', 'tablist');
+                $tabs.each(function () {
+                    var id = $(this).data('tab');
+                    $(this).attr({role: 'tab', id: 'capconnect-nav-' + id, 'aria-controls': 'capconnect-tab-' + id});
+                    $('#capconnect-tab-' + id).attr({role: 'tabpanel', 'aria-labelledby': 'capconnect-nav-' + id});
+                });
 
+                /** Selects an available tab without interpreting URL fragments as selectors. */
                 function switchTab(tabId) {
-                    // Update active tab header class
-                    $tabs.removeClass('nav-tab-active');
-                    $tabs.filter('[data-tab="' + tabId + '"]').addClass('nav-tab-active');
-
-                    // Show corresponding content, hide others
-                    $tabContents.hide();
+                    var $selected = $tabs.filter(function () { return $(this).data('tab') === tabId && !this.hidden; });
+                    if (!$selected.length) {
+                        tabId = 'forms';
+                        $selected = $tabs.filter('[data-tab="forms"]');
+                    }
+                    $tabs.removeClass('nav-tab-active').attr({'aria-selected': 'false', tabindex: '-1'});
+                    $selected.addClass('nav-tab-active').attr({'aria-selected': 'true', tabindex: '0'});
+                    $tabContents.hide().attr('hidden', true);
+                    document.getElementById('capconnect-tab-' + tabId).hidden = false;
                     $('#capconnect-tab-' + tabId).show();
-
-                    // Save state to sessionStorage & update window hash
-                    sessionStorage.setItem('capconnect_active_tab', tabId);
+                    try { sessionStorage.setItem('capconnect_active_tab', tabId); } catch (error) { /* Storage is optional. */ }
                     window.location.hash = tabId;
                 }
 
-                $tabs.on('click', function (e) {
-                    e.preventDefault();
-                    var tabId = $(this).data('tab');
-                    switchTab(tabId);
-                });
-
-                // Determine initial tab on page load
-                var initialTab = 'connection';
-                var hash = window.location.hash.substring(1);
-                var storedTab = sessionStorage.getItem('capconnect_active_tab');
-
-                if (hash && $('#capconnect-tab-' + hash).length) {
-                    initialTab = hash;
-                } else if (storedTab && $('#capconnect-tab-' + storedTab).length) {
-                    initialTab = storedTab;
+                /** Updates the WooCommerce tab immediately while retaining its submitted settings. */
+                function syncWooCommerceTab() {
+                    $tabs.filter('[data-tab="woocommerce"]').prop('hidden', !$wooToggle.prop('checked')).toggle(!!$wooToggle.prop('checked'));
+                    if (!$wooToggle.prop('checked') && $tabs.filter('[data-tab="woocommerce"]').hasClass('nav-tab-active')) {
+                        switchTab('forms');
+                    }
                 }
-
-                switchTab(initialTab);
+                $wooToggle.on('change', syncWooCommerceTab);
+                syncWooCommerceTab();
+                $tabs.on('click', function (event) {
+                    event.preventDefault();
+                    switchTab($(this).data('tab'));
+                });
+                $tabs.on('keydown', function (event) {
+                    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                    event.preventDefault();
+                    var $available = $tabs.filter(function () { return !this.hidden; });
+                    var index = $available.index(this);
+                    if (event.key === 'Home') index = 0;
+                    else if (event.key === 'End') index = $available.length - 1;
+                    else index = (index + (event.key === 'ArrowRight' ? 1 : -1) + $available.length) % $available.length;
+                    switchTab($available.eq(index).data('tab'));
+                    $available.eq(index).trigger('focus');
+                });
+                var storedTab = '';
+                try { storedTab = sessionStorage.getItem('capconnect_active_tab'); } catch (error) { /* Storage is optional. */ }
+                switchTab(window.location.hash.substring(1) || storedTab || 'connection');
 
                 // Reset confirmation
                 $('#capconnect-reset-trigger-btn').on('click', function (e) {
@@ -1213,20 +1269,29 @@ class Capconnect_Settings
         echo esc_html__('Hide the "Cap" link displayed in the bottom-right corner of the widget.', 'capconnect-for-wp') . '</label>';
     }
 
-    public function renderFormsSectionDescription(): void
+    /** Explains the independent guest checkout and account protection controls. */
+    public function renderWooCommerceDescription(): void
     {
-        echo '<p class="description">' . esc_html__('Select which WordPress forms you want to protect using Cap.', 'capconnect-for-wp') . '</p>';
+        echo '<p class="description">' . esc_html__('Choose which WooCommerce areas to protect. Checkout protection applies to guests only. Account creation during checkout can be protected independently. Express payments require a valid token when protection applies.', 'capconnect-for-wp') . '</p>';
     }
 
+    /** Explains the shared integration switches. */
+    public function renderFormsSectionDescription(): void
+    {
+        echo '<p class="description">' . esc_html__('Select which forms and integrations you want to protect using Cap.', 'capconnect-for-wp') . '</p>';
+    }
+
+    /** Renders explicit checkbox values while preserving unavailable integrations. */
     public function renderCheckboxField(array $args): void
     {
         $field = $args['field'];
         $label = $args['label'];
-        $value = (bool) get_option($field, true);
+        $value = $field === 'capconnect_woocommerce_enabled'
+            ? Capconnect_WooCommerce::isEnabled() : (bool) get_option($field, $args['default'] ?? true);
 
         $disabled = false;
 
-        if ($field === 'capconnect_protect_woocommerce' && ! class_exists('WooCommerce')) {
+        if (in_array($field, ['capconnect_woocommerce_enabled', 'capconnect_protect_woocommerce'], true) && ! class_exists('WooCommerce')) {
             $disabled = true;
         } elseif ($field === 'capconnect_protect_gravityforms' && ! class_exists('GFForms')) {
             $disabled = true;
@@ -1238,6 +1303,7 @@ class Capconnect_Settings
             echo '<input type="hidden" name="' . esc_attr($field) . '" value="' . ($value ? '1' : '0') . '" />';
             echo '<label><input type="checkbox" value="1"' . checked($value, true, false) . ' disabled="disabled" /> ';
         } else {
+            echo '<input type="hidden" name="' . esc_attr($field) . '" value="0" />';
             echo '<label><input type="checkbox" name="' . esc_attr($field) . '" value="1"' . checked($value, true, false) . ' /> ';
         }
         echo esc_html($label) . '</label>';
@@ -1428,6 +1494,7 @@ class Capconnect_Settings
         return $val;
     }
 
+    /** Resets all settings, including the WooCommerce master and individual preferences. */
     public function handleResetSettings(): void
     {
         if (! isset($_POST['capconnect_reset_settings'])) {
@@ -1498,6 +1565,8 @@ class Capconnect_Settings
             'capconnect_troubleshoot_label',
             'capconnect_troubleshoot_label_translations',
         ];
+
+        $options_to_delete = array_merge($options_to_delete, ['capconnect_woocommerce_enabled'], array_values(Capconnect_WooCommerce::OPTIONS));
 
         foreach ($options_to_delete as $opt) {
             delete_option($opt);
@@ -1792,6 +1861,41 @@ class Capconnect_Settings
         } else {
             update_option('capconnect_connection_failed_notice', $result['message']);
         }
+    }
+
+    /** Displays the WooCommerce opt-in notice until this administrator dismisses it. */
+    public function displayWooCommerceInactiveNotice(): void
+    {
+        if (! current_user_can('manage_options') || ! class_exists('WooCommerce')
+            || Capconnect_WooCommerce::isEnabled()
+            || get_user_meta(get_current_user_id(), 'capconnect_woocommerce_notice_dismissed_' . get_current_blog_id(), true)) {
+            return;
+        }
+        ?>
+        <div class="notice notice-info">
+            <p><strong><?php esc_html_e('CapConnect for WP:', 'capconnect-for-wp'); ?></strong>
+                <?php esc_html_e('WooCommerce is active, but CapConnect protection is not enabled. Enable Protect WooCommerce in Integrations and save the settings to protect its forms.', 'capconnect-for-wp'); ?>
+                <a href="<?php echo esc_url(admin_url('options-general.php?page=capconnect-settings#forms')); ?>"><?php esc_html_e('Open integrations', 'capconnect-for-wp'); ?></a>
+            </p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="capconnect_dismiss_woocommerce_notice" />
+                <?php wp_nonce_field('capconnect_dismiss_woocommerce_notice'); ?>
+                <p><button type="submit" class="button"><?php esc_html_e('Dismiss notice', 'capconnect-for-wp'); ?></button></p>
+            </form>
+        </div>
+        <?php
+    }
+
+    /** Remembers notice dismissal for the current administrator and site. */
+    public function dismissWooCommerceInactiveNotice(): void
+    {
+        if (! current_user_can('manage_options')) {
+            wp_die(esc_html__('Unauthorized.', 'capconnect-for-wp'), '', ['response' => 403]);
+        }
+        check_admin_referer('capconnect_dismiss_woocommerce_notice');
+        update_user_meta(get_current_user_id(), 'capconnect_woocommerce_notice_dismissed_' . get_current_blog_id(), '1');
+        wp_safe_redirect(wp_get_referer() ?: admin_url());
+        exit;
     }
 
     /**

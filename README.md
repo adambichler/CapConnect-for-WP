@@ -89,7 +89,7 @@ Toggle protection for individual native forms:
 - **Registration Form** (default: checked)
 - **Lost Password Form** (default: checked) - protects both the lost password request and the reset password forms
 - **Comments Form** (default: checked)
-- **WooCommerce Checkout** (default: checked, only active if WooCommerce is enabled)
+- **WooCommerce** (default: unchecked; enabling it exposes independent WooCommerce settings, all selected by default)
 - **Gravity Forms** (default: checked, only active if Gravity Forms is enabled)
 
 ### Styling
@@ -116,10 +116,10 @@ The plugin automatically integrates with the following WordPress forms upon acti
 | Registration         | `register_form`                           | `registration_errors`          |
 | Lost Password        | `lostpassword_form`                       | `lostpassword_post`            |
 | Password Reset       | `resetpass_form`                          | `validate_password_reset`      |
-| WooCommerce checkout | `woocommerce_after_checkout_billing_form` | `woocommerce_checkout_process` |
+| WooCommerce checkout | `woocommerce_review_order_before_submit` | `woocommerce_checkout_process` |
 | Gravity Forms        | `gform_submit_button`                     | `gform_validation`             |
 
-WooCommerce and Gravity Forms integrations are only active if the corresponding plugins are installed and active.
+WooCommerce and Gravity Forms integrations are only active if the corresponding plugins are installed and active. WooCommerce also requires the integration switch to be enabled; its account and checkout areas can be configured separately from WordPress forms.
 
 ### Shortcode `[capconnect_widget]`
 

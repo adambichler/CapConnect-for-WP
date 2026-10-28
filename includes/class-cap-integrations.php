@@ -24,6 +24,7 @@ class Capconnect_Integrations
         $this->loginProof    = new Capconnect_Login_Proof();
     }
 
+    /** Initializes configured native forms and the dedicated WooCommerce integration. */
     public function init(): void
     {
         if (! Capconnect_Settings::isConfigured()) {
@@ -34,7 +35,7 @@ class Capconnect_Integrations
         $this->initLoginIntegration();
         $this->initRegisterIntegration();
         $this->initLostPasswordIntegration();
-        $this->initWooCommerceIntegration();
+        (new Capconnect_WooCommerce($this->widget))->init();
         $this->initGravityFormsIntegration();
         $this->initForminatorIntegration();
 
@@ -84,20 +85,6 @@ class Capconnect_Integrations
 
         add_action('resetpass_form', [$this, 'renderWidgetResetPassword']);
         add_action('validate_password_reset', [$this, 'validateResetPasswordToken'], 10, 2);
-    }
-
-    private function initWooCommerceIntegration(): void
-    {
-        if (! get_option('capconnect_protect_woocommerce', true)) {
-            return;
-        }
-
-        if (! $this->isWooCommerceActive()) {
-            return;
-        }
-
-        add_action('woocommerce_after_checkout_billing_form', [$this, 'renderWidgetCheckout']);
-        add_action('woocommerce_checkout_process', [$this, 'validateCheckoutToken']);
     }
 
     private function initGravityFormsIntegration(): void
@@ -203,16 +190,6 @@ class Capconnect_Integrations
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
-    public function renderWidgetCheckout(): void
-    {
-        $this->widget->enqueueAssets();
-        $html = $this->widget->renderForMode();
-        if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
-            $html = '<p class="form-row cap-widget-wrapper">' . $html . '</p>';
-        }
-        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-    }
-
     public function validateCommentToken(array $commentData): array
     {
         $token = $this->getToken();
@@ -229,11 +206,11 @@ class Capconnect_Integrations
     }
 
     /**
-     * Validates the login captcha or reuses the proof for the current login transaction.
+     * Validates native logins or reuses their proof; WooCommerce verifies its own transaction.
      */
     public function validateLoginToken(\WP_User|\WP_Error $user, string $password): \WP_User|\WP_Error
     {
-        if (is_wp_error($user)) {
+        if (Capconnect_WooCommerce::isHandlingLogin() || is_wp_error($user)) {
             return $user;
         }
 
@@ -318,8 +295,14 @@ class Capconnect_Integrations
         return $errors;
     }
 
+    /**
+     * Validates native password requests independently of WooCommerce settings.
+     */
     public function validateLostPasswordToken(\WP_Error $errors): void
     {
+        if (Capconnect_WooCommerce::isHandlingPassword('lost')) {
+            return;
+        }
         $token = $this->getToken();
 
         if (! $this->verifier->verify($token)) {
@@ -330,8 +313,14 @@ class Capconnect_Integrations
         }
     }
 
+    /**
+     * Validates native resets without consuming WooCommerce tokens twice.
+     */
     public function validateResetPasswordToken(\WP_Error $errors, $user): void
     {
+        if (Capconnect_WooCommerce::isHandlingPassword('reset')) {
+            return;
+        }
         if (! isset($_POST['cap-token'])) {
             return;
         }
@@ -342,18 +331,6 @@ class Capconnect_Integrations
             $errors->add(
                 'capconnect_verification_failed',
                 $this->getVerificationFailedMessage()
-            );
-        }
-    }
-
-    public function validateCheckoutToken(): void
-    {
-        $token = $this->getToken();
-
-        if (! $this->verifier->verify($token)) {
-            wc_add_notice(
-                $this->getVerificationFailedMessage(),
-                'error'
             );
         }
     }
@@ -437,11 +414,6 @@ class Capconnect_Integrations
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Wordfence validates its AJAX nonce before invoking authentication.
         $action = isset($_POST['action']) ? sanitize_key(wp_unslash($_POST['action'])) : '';
         return wp_doing_ajax() && $action === 'wordfence_ls_authenticate';
-    }
-
-    private function isWooCommerceActive(): bool
-    {
-        return class_exists('WooCommerce');
     }
 
     private function isGravityFormsActive(): bool
