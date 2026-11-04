@@ -9,12 +9,37 @@ if (! defined('ABSPATH')) {
 class Capconnect_Widget
 {
     private static bool $assetsEnqueued = false;
+    /** Registers shortcodes and preloads the runtime for subsequently inserted forms. */
     public function init(): void
     {
+        add_action('wp_enqueue_scripts', [$this, 'enqueueFrontendAssets'], 5);
+        add_action('wp_print_scripts', [$this, 'orderIntegrationAssets'], 0);
+        add_action('wp_print_footer_scripts', [$this, 'orderIntegrationAssets'], 0);
         add_shortcode('capconnect_widget', [$this, 'renderShortcode']);
         add_shortcode('capconnect_programmatic', [$this, 'renderProgrammaticShortcode']);
         add_shortcode('tpow_widget', [$this, 'renderShortcode']);
         add_shortcode('tpow_programmatic', [$this, 'renderProgrammaticShortcode']);
+    }
+
+    /** Makes dynamic forms usable even when the initial page contains no form. */
+    public function enqueueFrontendAssets(): void
+    {
+        if (Capconnect_Settings::isConfigured()) {
+            $this->enqueueAssets();
+        }
+    }
+
+    /** Runs the Forminator gate before its frontend can initialize submission handlers. */
+    public function orderIntegrationAssets(): void
+    {
+        if (! self::$assetsEnqueued || ! get_option('capconnect_protect_forminator', true)) {
+            return;
+        }
+        $scripts = wp_scripts();
+        $script = $scripts->registered['forminator-front-scripts'] ?? null;
+        if ($script && ! in_array('capconnect-forms', $script->deps, true)) {
+            $script->deps[] = 'capconnect-forms';
+        }
     }
 
     /**
@@ -135,20 +160,20 @@ class Capconnect_Widget
             (int) $widget_radius
         );
         wp_add_inline_style('capconnect-widget', $error_css);
-        wp_add_inline_style(
-            'capconnect-widget',
-            'body:has(#wfls-prompt-overlay, #wfls-prompt-wrapper, #wfls-token, #simba_two_factor_auth, input[name="two_factor_code"]) .cap-widget-wrapper { display: none !important; }'
-        );
-
+        $dependencies = ['capconnect-widget'];
+        if ((get_option('capconnect_protect_forminator', true) && class_exists('Forminator'))
+            || (get_option('capconnect_protect_gravityforms', true) && class_exists('GFForms'))) {
+            $dependencies[] = 'jquery';
+        }
         wp_enqueue_script('capconnect-forms', CAPCONNECT_PLUGIN_URL . 'assets/js/capconnect-forms.js',
-            ['capconnect-widget'], CAPCONNECT_VERSION, true);
+            $dependencies, CAPCONNECT_VERSION, true);
     }
 
-    /** Renders a translated visible widget with an optional CSP nonce. */
+    /** Renders a translated, non-prefetching widget with an optional CSP nonce. */
     public function renderWidget(?string $nonce = null): string
     {
         $endpoint = esc_attr(Capconnect_Settings::getEndpoint());
-        $attrs = 'data-cap-api-endpoint="' . $endpoint . '"';
+        $attrs = 'data-cap-api-endpoint="' . $endpoint . '" data-cap-disable-prefetch required';
 
         if ($nonce !== null) {
             $attrs .= ' data-cap-csp-nonce="' . esc_attr($nonce) . '"';

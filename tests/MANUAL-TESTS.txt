@@ -1,0 +1,128 @@
+Adam: Abnahme der bedarfsgesteuerten Challenges
+
+Automatisierte Prüfungen
+------------------------
+Voraussetzungen: PHP 8.2+, Node.js, Playwright, Google Chrome.
+CAPCONNECT_TEST_JQUERY: vollständige WordPress-Datei wp-includes/js/jquery/jquery.js.
+CAPCONNECT_TEST_FORMINATOR: Originaldatei assets/js/front/front.submit.js aus Forminator.
+CAPCONNECT_TEST_GRAVITYFORMS: optionaler Plugin-Pfad für das originale Theme-Reset-Stylesheet.
+CAPCONNECT_TEST_WORDPRESS: Dokumentwurzel der lokalen WordPress-Installation.
+Bei Playwright außerhalb des Projekts NODE_PATH auf dessen node_modules setzen.
+
+php tests/woocommerce.php
+node tests/woocommerce-browser.cjs
+node tests/forms-browser.cjs
+node tests/visible-browser.cjs [optionale lokal gespeicherte Formular-HTML-Dateien]
+php tests/native-runtime.php
+
+Die Browser-Tests verwenden isolierte Seiten und simulierte Netzwerkdienste.
+forms-browser.cjs verwendet das Forminator-Originalskript für den Submit-Ablauf.
+Gravity Forms und WooCommerce werden über ihre öffentlichen Schnittstellen simuliert.
+Das mitgelieferte echte Cap-Widget wird auf unerwünschtes Vorladen geprüft.
+Es werden keine echten Benutzer, Bestellungen oder Datenbankwerte angelegt/geändert.
+
+Bisherige Prüfumgebung
+----------------------
+Forminator-Originalskript: 1.56.2.
+WooCommerce-API/Export im Originalpaket nachvollzogen: 9.9.6.
+Gravity Forms: Vertrag der asynchronen Hooks ab 2.9; echte Plugin-Abnahme offen.
+Testlauf: Chrome headless; 311 isolierte PHP-Assertions, 32 Prüfungen mit
+installierten WordPress-/WooCommerce-Handlern und drei Browser-Suiten.
+Native Runtime-Prüfung: echte Hooks, tatsächlicher Verifier und installierte
+Login-/Passwort-Handler; Abhängigkeiten und CAP-Antworten nur im Speicher.
+Kein WordPress-Bootstrap, keine Datenbankverbindung und kein Mailversand.
+Echte flowers.local-Formular-Markups wurden zusätzlich isoliert geprüft.
+Der gemeldete erfolgreiche Versand ohne CAP wurde dabei nicht reproduziert.
+Live-VoiceOver/NVDA und eine vollständige WCAG-Abnahme sind noch offen.
+Das ersetzt nicht die folgenden Prüfungen auf deiner Testinstallation.
+
+Vorbereitung der manuellen Abnahme
+---------------------------------
+1. Plugin-Versionen, Browser und aktivierte Zahlungsarten notieren.
+2. Einstellungen und benötigte Testformulare über die WordPress-Oberfläche anlegen.
+3. Programmiermodus aktivieren; Zahlungsarten ausschließlich im Testmodus verwenden.
+4. Entwicklertools: Netzwerk öffnen, Protokoll beibehalten, Cache deaktivieren.
+   Nach dem Cap-Challenge-Endpunkt filtern. Auch Konsole und Formularanfragen prüfen.
+5. Danach alle anwendbaren Fälle im sichtbaren Widgetmodus wiederholen.
+
+Testfälle und erwartete Ergebnisse
+----------------------------------
+[ ] Seite ohne Formular öffnen, warten, scrollen, Maus bewegen und Tab drücken.
+    Danach ein Formular per AJAX oder Popup anzeigen.
+    Erwartet: keine Challenge allein durch Laden, Einfügen oder Anzeigen.
+
+[ ] Vorausgefülltes Formular sofort per Maus, Enter und Leertaste absenden.
+    Erwartet im unsichtbaren Modus: Challenge wird abgewartet; genau eine geschützte Übermittlung.
+    Erwartet im sichtbaren Modus: Ohne manuelle Bestätigung keine Übermittlung,
+    Fehlermeldung und Fokus am Widget. Nach Bestätigung genau eine Übermittlung.
+    Erforderliche Button-Werte und die ursprüngliche Aktion bleiben erhalten.
+
+[ ] Netzwerk drosseln, ein Feld bearbeiten und sofort mehrfach absenden.
+    Erwartet: eine laufende Challenge und eine Übermittlung; kein dauerhaft
+    gesperrter Button, kein hängenbleibender Spinner und keine Konsolenfehler.
+
+[ ] Cap-Endpunkt mit Request blocking sperren und absenden.
+    Erwartet: verständliche Fehlermeldung, keine Übermittlung ohne Token und
+    keine automatische Wiederholungsschleife. Nach Entsperren erneut absenden:
+    erwarteter Erfolg und verschwundene Fehlermeldung.
+
+[ ] Forminator: AJAX und Seitenneuladung prüfen; Pflichtfeldfehler auslösen,
+    korrigieren und erneut absenden. Verwendete Zahlungs-, Authentifizierungs-
+    sowie Stripe-/PayPal-Rückkehrabläufe gesondert durchspielen.
+    Erwartet: keine leeren oder bereits verbrauchten Tokens; ursprünglicher
+    Plugin-Ablauf funktioniert und lässt sich nach einem Fehler wiederholen.
+
+[ ] Gravity Forms: Postback, iframe und echtes AJAX prüfen; Mehrseitenformular
+    vorwärts/rückwärts bedienen; serverseitigen Fehler korrigieren und absenden.
+    Erwartet: jeder geschützte Versuch funktioniert; keine doppelten Requests,
+    verbrauchten Tokens oder hängenbleibenden Sperren nach einem Abbruch.
+
+[ ] WooCommerce: klassischen und Block-Checkout als Gast prüfen. Registrierung
+    an/aus, verpflichtende Registrierung sowie Registrierung nach Bestellung
+    durchspielen. Jede aktivierte Zahlungsart inklusive Fehler und Retry testen.
+    Erwartet: Einstellungen werden respektiert, Token vor geschützter Anfrage,
+    keine doppelte Bestellung. Beim normalen Block-Checkout muss eine gescheiterte
+    Challenge bereits vor dessen Zahlungs-Vorbereitung abbrechen.
+    Express-Zahlungen können ihren eigenen Dialog zuvor initialisieren.
+
+[ ] Ältere WooCommerce-Version ohne öffentliche Checkout-Validierungs-API prüfen.
+    Erwartet: geschützter Block-Checkout sperrt mit Aktualisierungshinweis;
+    klassische Formulare bleiben benutzbar.
+
+[ ] Formular während laufender Challenge entfernen, Popup erneut öffnen und
+    eine neue Formularinstanz mit derselben ID sofort absenden.
+    Erwartet: altes Ergebnis wird verworfen; neue Instanz funktioniert unabhängig.
+    Nach wiederholtem Öffnen/Schließen wächst die Zahl versteckter Solver nicht.
+
+[ ] Challenge-Markup im selben Formular ersetzen oder Checkout aktualisieren.
+    Zusätzlich während einer laufenden Checkout-Anfrage das Formular ersetzen.
+    Erwartet: neue Felder erhalten keinen veralteten Token; eine verspätete
+    Antwort setzt die neue Formularinstanz nicht zurück.
+
+[ ] Mehrere Formulare anzeigen und zunächst nur Formular A verwenden.
+    Erwartet: Formular B startet keine Challenge und erhält nicht den Token von A.
+
+[ ] Token ablaufen lassen und erneut absenden; danach Browser-Zurücknavigation.
+    Erwartet: frisches Token erst bei erneuter Nutzung; keine Challenge allein
+    durch Ablauf, Reset oder Zurücknavigation.
+
+[ ] WordPress- und WooCommerce-Login, Registrierung, Kommentar und Passwortformulare
+    prüfen. Wordfence, Two-Factor und AIOS jeweils separat mit richtigem und
+    falschem zweiten Faktor testen.
+    Erwartet: Anmeldung und Korrekturen funktionieren; Anzeigen des zweiten
+    Schritts startet keine zusätzliche Challenge und überdeckt keine Eingaben.
+
+[ ] Fehlermeldungen per Tastatur prüfen: erreichbar/verständlich, keine Überlappung,
+    Fokus bleibt sinnvoll, Formular lässt sich nach Korrektur erneut bedienen.
+
+Freigabeprotokoll
+----------------
+Datum:
+CapConnect-Version/Commit:
+WordPress / PHP:
+Forminator / Gravity Forms / WooCommerce:
+Wordfence / Two-Factor / AIOS:
+Browser:
+Zahlungsarten und Testmodus:
+Ergebnisse / offene Abweichungen:
+Freigabe durch Adam:

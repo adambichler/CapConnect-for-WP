@@ -9,13 +9,21 @@ const root = resolve(__dirname, '..');
 /** Installs deterministic Cap and WooCommerce stores without network or persistent data. */
 function installMocks({ mode = 'programmatic', blocks = false, registration = false } = {}) {
     window.CAPCONNECT_CONFIG = { mode, apiEndpoint: '/captcha/', verificationFailedMsg: 'Verification failed' };
-    window.CAPCONNECT_WC = { mode, blocks, registration, registrationRequired: false };
+    window.CAPCONNECT_WC = { mode, blocks, registration, registrationRequired: false, updateRequiredMsg: 'Bitte aktualisiere WooCommerce.' };
+    window.checkoutValidators = [];
+    window.wc = { blocksCheckoutEvents: { checkoutEvents: {
+        onCheckoutValidation(callback) { window.checkoutValidators.push(callback); return () => {}; }
+    } } };
     window.solvers = [];
     window.solveCount = 0;
+    window.solveAttempts = 0;
+    window.lifecycle = [];
     window.failSolve = false;
     class Widget extends HTMLElement {
         /** Models user-triggered solving and bubbling widget events. */
         async solve() {
+            window.solveAttempts++;
+            window.lifecycle.push('challenge');
             if (window.solveDelay) await new Promise(resolve => setTimeout(resolve, window.solveDelay));
             if (window.failSolve) throw new Error('Unavailable solver');
             this.token = 'token-' + (++window.solveCount);
@@ -28,7 +36,7 @@ function installMocks({ mode = 'programmatic', blocks = false, registration = fa
     customElements.define('cap-widget', Widget);
     window.Cap = class {
         /** Creates a separate hidden solver for each root. */
-        constructor() { this.widget = document.createElement('cap-widget'); document.documentElement.appendChild(this.widget); window.solvers.push(this); }
+        constructor() { if (window.failConstructor) throw new Error('Unavailable constructor'); this.widget = document.createElement('cap-widget'); document.documentElement.appendChild(this.widget); window.solvers.push(this); }
         /** Delegates mock solving. */
         solve() { return this.widget.solve(); }
         /** Delegates expiry/reset. */
@@ -61,7 +69,12 @@ function installMocks({ mode = 'programmatic', blocks = false, registration = fa
         subscribe(fn) { subscribers.push(fn); return () => {}; }
     } };
     window.wp.apiFetch = function (options) {
-        let next = value => { window.sent.push(JSON.parse(JSON.stringify(value))); return Promise.resolve({ success: true }); };
+        let next = value => {
+            window.lifecycle.push('request');
+            window.sent.push(JSON.parse(JSON.stringify(value)));
+            if (window.holdRequests) return new Promise(resolve => { window.releaseRequest = () => resolve({ success: true }); });
+            return Promise.resolve({ success: true });
+        };
         middleware.slice().reverse().forEach(fn => { const previous = next; next = value => fn(value, previous); });
         return next(options);
     };
@@ -71,13 +84,15 @@ function installMocks({ mode = 'programmatic', blocks = false, registration = fa
 
 /** Runs UI and token lifecycle regressions against real plugin scripts and mocked external services. */
 async function main() {
+    if (!process.env.CAPCONNECT_TEST_JQUERY) throw new Error('CAPCONNECT_TEST_JQUERY muss auf eine vollständige WordPress-jQuery-Datei zeigen.');
+    const jquery = readFileSync(process.env.CAPCONNECT_TEST_JQUERY, 'utf8');
+    if (!jquery.includes('jQuery') || jquery.length < 1000) throw new Error('Die jQuery-Testdatei ist leer oder unvollständig.');
     const browser = await chromium.launch({ channel: 'chrome', headless: true });
     try {
         const page = await browser.newPage();
         const failures = [];
         page.on('pageerror', error => failures.push(error.message));
         const settings = execFileSync('php', [resolve(__dirname, 'woocommerce.php'), '--settings-html'], { encoding: 'utf8' });
-        const jquery = readFileSync(process.env.CAPCONNECT_TEST_JQUERY, 'utf8');
         await page.route('http://capconnect.test/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><script>' + jquery + '</script></head><body>' + settings + '</body></html>' }));
         await page.goto('http://capconnect.test/#woocommerce');
         await page.waitForFunction(() => document.querySelector('[data-tab="forms"]').getAttribute('aria-selected') === 'true');
@@ -116,10 +131,23 @@ async function main() {
         await page.route('http://capconnect.test/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><body></body>' }));
         await page.goto('http://capconnect.test/');
         await page.evaluate(installMocks, {});
-        await page.setContent('<form id="first"><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div><button id="submit-first" name="login" value="yes">Login</button></form><form id="second"><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div><button>Register</button></form>');
+        await page.setContent('<form id="first"><input name="username"><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div><button id="submit-first" name="login" value="yes">Login</button></form><form id="second" hidden><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div><button>Register</button></form>');
         await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-forms.js') });
-        await page.waitForFunction(() => document.querySelector('#first input').value && document.querySelector('#second input').value);
-        const tokens = await page.locator('form input').evaluateAll(inputs => inputs.map(input => input.value));
+        assert.equal(await page.evaluate(() => window.solveAttempts), 0);
+        await page.locator('#first input[name="username"]').fill('Adam');
+        await page.waitForFunction(() => document.querySelector('#first input[name="cap-token"]').value);
+        assert.equal(await page.evaluate(() => window.solveAttempts), 1);
+        assert.equal(await page.locator('#second input').inputValue(), '');
+        await page.evaluate(() => {
+            const form = document.getElementById('second');
+            form.hidden = false;
+            form.addEventListener('submit', event => event.preventDefault());
+        });
+        assert.equal(await page.evaluate(() => window.solveAttempts), 1);
+        await page.locator('#second button').focus();
+        await page.keyboard.press('Space');
+        await page.waitForFunction(() => document.querySelector('#second input').value);
+        const tokens = await page.locator('input[name="cap-token"]').evaluateAll(inputs => inputs.map(input => input.value));
         assert.notEqual(tokens[0], tokens[1]);
         await page.evaluate(() => {
             const form = document.getElementById('first');
@@ -128,9 +156,11 @@ async function main() {
             form.requestSubmit(document.getElementById('submit-first'));
         });
         await page.waitForFunction(() => window.lastSubmitter === 'submit-first');
-        assert.notEqual(await page.locator('#first input').inputValue(), tokens[0]);
+        assert.notEqual(await page.locator('#first input[name="cap-token"]').inputValue(), tokens[0]);
         assert.equal(await page.locator('#second input').inputValue(), tokens[1]);
         await page.evaluate(() => { window.failSolve = true; document.body.insertAdjacentHTML('beforeend', '<form id="failed"><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div><button>Retry</button></form>'); });
+        assert.equal(await page.locator('#failed [role="alert"]').count(), 0);
+        await page.evaluate(() => document.getElementById('failed').requestSubmit());
         await page.waitForFunction(() => document.querySelector('#failed [role="alert"]'));
         await page.evaluate(() => {
             window.failSolve = false;
@@ -150,14 +180,43 @@ async function main() {
             const result = await second;
             await first;
             window.solveDelay = 0;
-            return { result: result.token, field: form.querySelector('input').value };
+            return { result: result.token, field: form.querySelector('input[name="cap-token"]').value };
         });
         assert.equal(racing.result, racing.field);
+        const repeated = await page.evaluate(async () => {
+            const form = document.getElementById('first');
+            window.CAPCONNECT_FORMS.reset(form);
+            window.solveDelay = 30;
+            window.repeatedSubmissions = 0;
+            form.addEventListener('submit', event => { event.preventDefault(); window.repeatedSubmissions++; });
+            const attempts = window.solveAttempts;
+            form.requestSubmit(document.getElementById('submit-first'));
+            form.requestSubmit(document.getElementById('submit-first'));
+            await new Promise(resolve => setTimeout(resolve, 100));
+            window.solveDelay = 0;
+            return { submissions: window.repeatedSubmissions, attempts: window.solveAttempts - attempts };
+        });
+        assert.deepEqual(repeated, { submissions: 1, attempts: 1 });
+        const beforeRestore = await page.evaluate(() => window.solveAttempts);
+        await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+        assert.equal(await page.evaluate(() => window.solveAttempts), beforeRestore);
+        await page.evaluate(() => {
+            document.body.insertAdjacentHTML('beforeend', '<form id="ajax-form"><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div><button type="submit" name="send" value="yes">Send</button></form>');
+            document.getElementById('ajax-form').addEventListener('submit', event => {
+                event.preventDefault();
+                window.ajaxPayload = Object.fromEntries(new FormData(event.target, event.submitter));
+            });
+        });
+        assert.equal(await page.evaluate(() => window.solveAttempts), beforeRestore);
+        await page.evaluate(() => document.getElementById('ajax-form').requestSubmit(document.querySelector('#ajax-form button')));
+        await page.waitForFunction(() => window.ajaxPayload);
+        assert.match(await page.evaluate(() => window.ajaxPayload['cap-token']), /^token-/);
+        assert.equal(await page.evaluate(() => window.ajaxPayload.send), 'yes');
         console.log('Passed isolated form tokens, dynamic forms, submitter preservation, accessible failure and retry.');
 
         await page.goto('http://capconnect.test/');
         await page.evaluate(installMocks, { mode: 'widget' });
-        await page.setContent('<form id="loginform"><div class="cap-widget-wrapper"><cap-widget></cap-widget></div><button>Login</button></form><form id="other" class="login"><button>Other</button></form><form class="register"><div class="cap-widget-wrapper">Registration</div></form>');
+        await page.setContent('<form id="loginform"><div class="cap-widget-wrapper"><cap-widget></cap-widget></div><button>Login</button></form><form id="other" class="login"><div class="cap-widget-wrapper"><cap-widget></cap-widget></div><input name="two_factor_code"><button>Other</button></form><form class="register"><div class="cap-widget-wrapper">Registration</div></form>');
         await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-forms.js') });
         await page.evaluate(async () => {
             document.querySelectorAll('form').forEach(form => form.addEventListener('submit', event => event.preventDefault()));
@@ -168,21 +227,24 @@ async function main() {
         await page.evaluate(() => {
             document.querySelector('cap-widget').remove();
             document.getElementById('loginform').requestSubmit();
-            document.body.insertAdjacentHTML('beforeend', '<div id="wfls-prompt-overlay">Two-factor</div>');
+            document.getElementById('loginform').insertAdjacentHTML('beforeend', '<div id="wfls-prompt-overlay">Two-factor</div>');
         });
         assert.match(await page.locator('#loginform input[name="cap-token"]').inputValue(), /^token-/);
         await page.waitForFunction(() => document.querySelector('#loginform .cap-widget-wrapper').hidden);
         assert.equal(await page.locator('form.register .cap-widget-wrapper').isVisible(), true);
+        assert.equal(await page.locator('#other .cap-widget-wrapper').evaluate(wrapper => wrapper.hidden), false, 'Unverified 2FA placeholders cannot hide another login challenge');
         console.log('Passed form-local 2FA token preservation and widget visibility.');
 
         for (const mode of ['programmatic', 'widget']) {
             await page.goto('http://capconnect.test/');
             await page.evaluate(installMocks, { mode, blocks: true, registration: true });
             const widget = mode === 'widget' ? '<cap-widget></cap-widget>' : '<div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div>';
-            await page.setContent('<div class="wc-block-checkout"><div data-capconnect-wc="blocks">' + widget + '</div></div><template id="capconnect-wc-after-register"><div data-capconnect-wc="after_register">' + widget + '</div></template><form class="wc-block-order-confirmation-create-account-form"><button type="submit">Create account</button></form>');
+            await page.setContent('<div class="wc-block-checkout"><input aria-label="Email"><div data-capconnect-wc="blocks">' + widget + '</div></div><template id="capconnect-wc-after-register"><div data-capconnect-wc="after_register">' + widget + '</div></template><form class="wc-block-order-confirmation-create-account-form"><button type="submit">Create account</button></form>');
             await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-forms.js') });
             await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-woocommerce.js') });
+            assert.equal(await page.evaluate(() => window.solveAttempts), 0);
             if (mode === 'widget') await page.evaluate(() => document.querySelector('[data-capconnect-wc="blocks"] cap-widget').solve());
+            else await page.getByLabel('Email').fill('adam@example.test');
             await page.waitForFunction(() => window.extensionToken);
             assert.equal(await page.locator('form [data-capconnect-wc="after_register"]').count(), 1);
             const first = await page.evaluate(async () => {
@@ -191,8 +253,10 @@ async function main() {
             });
             assert.match(first.data.extensions.capconnect.token, /^token-/);
             assert.equal(first.data.extensions.other.retained, true);
-            if (mode === 'widget') await page.evaluate(() => document.querySelector('[data-capconnect-wc="blocks"] cap-widget').solve());
-            await page.waitForFunction(() => window.extensionToken);
+            if (mode === 'widget') {
+                await page.evaluate(() => document.querySelector('[data-capconnect-wc="blocks"] cap-widget').solve());
+                await page.waitForFunction(() => window.extensionToken);
+            } else assert.equal(await page.evaluate(() => window.extensionToken), '');
             const second = await page.evaluate(async () => {
                 await wp.apiFetch({ path: '/wc/store/v1/batch', method: 'POST', data: { requests: [{ path: '/wc/store/v1/cart', method: 'GET' }, { path: '/wc/store/v1/checkout', method: 'POST', body: { create_account: true } }] } });
                 return window.sent.at(-1);
@@ -202,24 +266,66 @@ async function main() {
             assert.notEqual(batchToken, first.data.extensions.capconnect.token);
             assert.equal(second.data.requests[0].path, '/wc/store/v1/cart');
             if (mode === 'programmatic') {
+                assert.equal(await page.evaluate(() => window.extensionToken), '');
+                const attempts = await page.evaluate(() => window.solveAttempts);
+                await page.getByLabel('Email').fill('other@example.test');
                 await page.waitForFunction(() => window.extensionToken);
-                const before = await page.evaluate(() => window.extensionToken);
                 await page.evaluate(() => window.solvers.find(solver => solver.widget.token === window.extensionToken).reset());
-                await page.waitForFunction(token => window.extensionToken && window.extensionToken !== token, before);
+                assert.equal(await page.evaluate(() => window.extensionToken), '');
+                assert.equal(await page.evaluate(() => window.solveAttempts), attempts + 1);
+                await page.getByLabel('Email').fill('third@example.test');
+                await page.waitForFunction(() => window.extensionToken);
             }
             console.log('Passed ' + mode + ' Block Checkout token transport, retry, batch payloads and delayed registration insertion.');
         }
+        await page.goto('http://capconnect.test/');
+        await page.evaluate(installMocks, { mode: 'programmatic', blocks: true });
+        await page.setContent('<div class="wc-block-checkout"><div data-capconnect-wc="blocks"><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div></div></div>');
+        await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-forms.js') });
+        await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-woocommerce.js') });
+        assert.equal(await page.evaluate(() => window.solveAttempts), 0);
+        assert.equal(await page.evaluate(() => wp.data.select('wc/store/validation').getValidationError('capconnect')), undefined);
+        await page.evaluate(async () => {
+            window.failSolve = true;
+            try { await wp.apiFetch({ path: '/wc/store/v1/checkout', method: 'POST', data: {} }); } catch (error) {}
+        });
+        assert.equal(await page.evaluate(() => window.sent.length), 0);
+        assert.equal(await page.locator('[data-capconnect-wc="blocks"] [role="alert"]').isVisible(), true);
+        await page.evaluate(() => { window.failSolve = false; });
+        await page.evaluate(() => wp.apiFetch({ path: '/wc/store/v1/checkout', method: 'POST', data: {} }));
+        assert.equal(await page.evaluate(() => window.solveAttempts), 2);
+        assert.match(await page.evaluate(() => window.sent[0].data.extensions.capconnect.token), /^token-/);
+        assert.equal(await page.evaluate(() => window.extensionToken), '');
+        console.log('Passed Block Checkout submission without prior interaction.');
+
+        await page.goto('http://capconnect.test/');
+        await page.evaluate(installMocks, { mode: 'programmatic' });
+        await page.setContent('<form class="checkout"><input name="email"><div data-capconnect-wc="checkout_register" hidden><div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div></div><button>Order</button></form><input type="checkbox" id="createaccount">');
+        await page.addScriptTag({ content: jquery });
+        await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-forms.js') });
+        await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-woocommerce.js') });
+        await page.locator('form.checkout input[name="email"]').fill('adam@example.test');
+        await page.evaluate(() => { jQuery(document.body).trigger('updated_checkout'); jQuery(document.body).trigger('checkout_error'); });
+        assert.equal(await page.evaluate(() => window.solveAttempts), 0);
+        await page.locator('#createaccount').check();
+        assert.equal(await page.evaluate(() => window.solveAttempts), 0);
+        await page.locator('form.checkout input[name="email"]').fill('new@example.test');
+        await page.waitForFunction(() => document.querySelector('form.checkout input[name="cap-token"]').value);
+        assert.equal(await page.evaluate(() => window.solveAttempts), 1);
+        console.log('Passed conditional classic checkout, update and reset without unsolicited solves.');
+
         for (const mode of ['programmatic', 'widget']) {
             await page.goto('http://capconnect.test/');
             await page.evaluate(installMocks, { mode, blocks: false, registration: true });
             const markup = mode === 'widget' ? '<cap-widget></cap-widget>' : '<div class="capconnect-programmatic-wrapper"><input type="hidden" name="cap-token"></div>';
-            await page.setContent('<div class="wc-block-checkout"><div data-capconnect-wc="blocks">' + markup + '</div></div>');
+            await page.setContent('<div class="wc-block-checkout"><input aria-label="Checkout email"><div data-capconnect-wc="blocks">' + markup + '</div></div>');
             await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-forms.js') });
             await page.addScriptTag({ path: resolve(root, 'assets/js/capconnect-woocommerce.js') });
             assert.equal(await page.locator('[data-capconnect-wc="blocks"]').isVisible(), false);
             await page.evaluate(() => { window.account = true; window.notifyStores(); });
             assert.equal(await page.locator('[data-capconnect-wc="blocks"]').evaluate(element => !element.hidden && element.style.display !== 'none'), true);
             if (mode === 'widget') await page.evaluate(() => document.querySelector('[data-capconnect-wc="blocks"] cap-widget').solve());
+            else await page.getByLabel('Checkout email').fill('adam@example.test');
             await page.waitForFunction(() => window.extensionToken);
             const original = await page.evaluate(() => window.extensionToken);
             await page.evaluate(() => { window.account = false; window.notifyStores(); });
@@ -227,6 +333,7 @@ async function main() {
             assert.equal(await page.evaluate(() => window.extensionToken), '');
             await page.evaluate(() => { window.account = true; window.notifyStores(); });
             if (mode === 'widget') await page.evaluate(() => document.querySelector('[data-capconnect-wc="blocks"] cap-widget').solve());
+            else await page.getByLabel('Checkout email').fill('again@example.test');
             await page.waitForFunction(() => window.extensionToken);
             assert.notEqual(await page.evaluate(() => window.extensionToken), original);
             console.log('Passed ' + mode + ' independent checkout registration and account-choice toggling.');
@@ -279,7 +386,7 @@ async function main() {
                     const form = document.querySelector('form');
                     form.querySelector('.last').insertAdjacentHTML('beforebegin', markup);
                 }, layoutFixture.programmatic[area]);
-                if (area === 'blocks') await page.evaluate(() => window.CAPCONNECT_FORMS.solve(document.querySelector('[data-capconnect-wc="blocks"]')));
+                await page.evaluate(area => window.CAPCONNECT_FORMS.solve(area === 'blocks' ? document.querySelector('[data-capconnect-wc="blocks"]') : document.querySelector('form')), area);
                 await page.waitForFunction(() => document.querySelector('form input[name="cap-token"]').value);
                 const collapsed = await page.evaluate(() => {
                     const form = document.querySelector('form');
@@ -327,4 +434,5 @@ async function main() {
         console.log('No browser JavaScript errors.');
     } finally { await browser.close(); }
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+module.exports = { installMocks };
+if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -11,6 +11,43 @@
     var syncing = false;
     var pending = false;
     var blockGeneration = 0;
+    var validationReady = false;
+    var updateMessage = cfg.updateRequiredMsg || window.CAPCONNECT_CONFIG.verificationFailedMsg;
+
+    /** Returns a checkout-supported failure response before regular payment preparation. */
+    function validationFailure(message) {
+        return { type: 'error', errorMessage: message, message: message };
+    }
+
+    /** Registers the public checkout validation emitter without changing checkout context state. */
+    function registerValidation() {
+        if (validationReady) return;
+        var api = window.wc && window.wc.blocksCheckoutEvents;
+        var events = api && (api.checkoutEvents || api);
+        if (!events || typeof events.onCheckoutValidation !== 'function') return;
+        events.onCheckoutValidation(function () {
+            var root;
+            // Let DOM observers reconcile a checkout inserted in this same JavaScript task first.
+            return Promise.resolve().then(function () {
+                var required = !!cfg.blocks || (!!cfg.registration && wantsAccount());
+                if (!required) return { type: 'success' };
+                root = document.querySelector('[data-capconnect-wc="blocks"]');
+                if (!root || root !== blockRoot) return validationFailure(window.CAPCONNECT_CONFIG.verificationFailedMsg);
+                if (cfg.mode !== 'programmatic') return blockToken ? { type: 'success' } : validationFailure(window.CAPCONNECT_CONFIG.verificationFailedMsg);
+                var generation = blockGeneration;
+                return forms.solve(root).then(function () {
+                    if (!root.isConnected || root !== blockRoot || generation !== blockGeneration) {
+                        return validationFailure(window.CAPCONNECT_CONFIG.verificationFailedMsg);
+                    }
+                    return { type: 'success' };
+                });
+            }).catch(function (error) {
+                if (root && root === blockRoot) forms.showError(root, error);
+                return validationFailure(window.CAPCONNECT_CONFIG.verificationFailedMsg);
+            });
+        });
+        validationReady = true;
+    }
 
     /** Gets a registered WooCommerce data store without assuming Blocks are present. */
     function store(name, dispatch) {
@@ -53,14 +90,20 @@
         if (syncing) return;
         syncing = true;
         try {
+            registerValidation();
             var root = document.querySelector('[data-capconnect-wc="blocks"]');
-            if (!root) return;
             if (root !== blockRoot) {
+                if (blockRoot) forms.reset(blockRoot);
                 blockRoot = root;
                 blockGeneration++;
                 pending = false;
                 active = false;
                 publish('');
+            }
+            if (!root) {
+                var emptyValidation = store('validation', true);
+                if (emptyValidation) emptyValidation.clearValidationError('capconnect');
+                return;
             }
             var required = !!cfg.blocks || (!!cfg.registration && wantsAccount());
             blockRoot.hidden = !required;
@@ -78,15 +121,35 @@
             var validationState = store('validation');
             var error = validationState && validationState.getValidationError && validationState.getValidationError('capconnect');
             if (validation) {
-                if (active && !blockToken && !error) {
-                    validation.setValidationErrors({ capconnect: { message: window.CAPCONNECT_CONFIG.verificationFailedMsg, hidden: true } });
-                } else if ((!active || blockToken) && error) {
+                var message = !validationReady ? updateMessage : window.CAPCONNECT_CONFIG.verificationFailedMsg;
+                var blocked = active && (!validationReady || (cfg.mode === 'widget' && !blockToken));
+                if (blocked && (!error || error.message !== message)) {
+                    validation.setValidationErrors({ capconnect: { message: message, hidden: validationReady } });
+                } else if (!blocked && error) {
                     validation.clearValidationError('capconnect');
                 }
             }
-            if (active && !blockToken) solveBlock();
+            if (active && !validationReady) {
+                var output = root.querySelector('.capconnect-error-message');
+                if (!output || output.textContent !== updateMessage) {
+                    forms.showError(root, new Error(updateMessage));
+                    root.querySelector('.capconnect-error-message').textContent = updateMessage;
+                }
+            }
         } finally { syncing = false; }
     }
+
+    /** Starts the Block Checkout challenge when its checkout is used. */
+    function handleBlockInteraction(event) {
+        if (!event.isTrusted || cfg.mode !== 'programmatic' || !validationReady || !active || !blockRoot || !event.target.closest) return;
+        if (event.target.closest('button:not([type]), button[type="submit"], input[type="submit"], input[type="image"]')) return;
+        var checkout = blockRoot.closest('.wc-block-checkout');
+        if (checkout && checkout.contains(event.target)) solveBlock();
+    }
+
+    ['pointerdown', 'keydown', 'input', 'change'].forEach(function (name) {
+        document.addEventListener(name, handleBlockInteraction, true);
+    });
 
     /** Moves inert markup into the React-rendered delayed-registration form. */
     function syncForms() {
@@ -118,6 +181,7 @@
     }, true);
     document.addEventListener('capconnectTokenReset', function (event) {
         if (event.target === blockRoot) {
+            pending = false;
             publish('');
             queueMicrotask(syncBlocks);
         }
@@ -145,9 +209,19 @@
             try { data = JSON.parse(data); } catch (error) { return Promise.resolve(request); }
         }
         if (!cfg.blocks && !(cfg.registration && (data.create_account || cfg.registrationRequired))) return Promise.resolve(request);
-        if (!blockRoot) return Promise.resolve(request); // The server rejects unprotected external/express flows.
-        var token = cfg.mode === 'programmatic' ? forms.solve(blockRoot).then(function (result) { return result.token; }) : Promise.resolve(blockToken);
+        syncBlocks();
+        if (!validationReady) return Promise.reject(new Error(updateMessage));
+        if (!blockRoot || !blockRoot.isConnected) return Promise.reject(new Error(window.CAPCONNECT_CONFIG.verificationFailedMsg));
+        var root = blockRoot;
+        var generation = blockGeneration;
+        var token = cfg.mode === 'programmatic' ? forms.solve(root).then(function (result) { return result.token; }).catch(function (error) {
+            if (root === blockRoot) forms.showError(root, error);
+            throw error;
+        }) : Promise.resolve(blockToken);
         return token.then(function (value) {
+            if (!value || !root.isConnected || root !== blockRoot || generation !== blockGeneration) {
+                throw new Error(window.CAPCONNECT_CONFIG.verificationFailedMsg);
+            }
             var extensions = Object.assign({}, data.extensions, { capconnect: { token: value } });
             var payload = Object.assign({}, data, { extensions: extensions });
             var protectedRequest = Object.assign({}, request);
@@ -167,11 +241,14 @@
                 return /\/wc\/store(?:\/v\d+)?\/checkout\/?(?:\?.*)?$/.test(request.path || '') && (request.method || 'GET').toUpperCase() === 'POST';
             });
             if (!checkout && !batch) return next(options);
+            var requestRoot = document.querySelector('[data-capconnect-wc="blocks"]');
+            var requestField = requestRoot && requestRoot.querySelector('input[name="cap-token"], cap-widget');
             var prepared = batch ? Promise.all(data.requests.map(protectRequest)).then(function (requests) {
                 return Object.assign({}, options, { data: Object.assign({}, data, { requests: requests }) });
             }) : protectRequest(options);
             return prepared.then(function (request) { return next(request); }).finally(function () {
-                if (blockRoot && (checkout || batch)) {
+                if (requestRoot && requestRoot === blockRoot && requestRoot.isConnected
+                    && requestRoot.querySelector('input[name="cap-token"], cap-widget') === requestField) {
                     // Invalidate atomically: store subscriptions must not republish a consumed token.
                     syncing = true;
                     blockGeneration++;
@@ -191,17 +268,20 @@
             var form = document.querySelector('form.checkout');
             if (form) {
                 forms.reset(form);
-                if (cfg.mode === 'programmatic') forms.solve(form).catch(function (error) { forms.showError(form, error); });
             }
         }).on('updated_checkout', function () {
             syncForms();
-            var form = document.querySelector('form.checkout');
-            if (form && cfg.mode === 'programmatic' && form.querySelector('.capconnect-programmatic-wrapper')) {
-                forms.solve(form).catch(function (error) { forms.showError(form, error); });
-            }
         });
     }
     window.wp.data.subscribe(syncBlocks);
     syncForms();
     new MutationObserver(syncForms).observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted && blockRoot) {
+            blockGeneration++;
+            pending = false;
+            publish('');
+            syncBlocks();
+        }
+    });
 })();

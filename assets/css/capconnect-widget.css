@@ -47,10 +47,24 @@ cap-widget {
   --cap-invalid-ring-color: #37415133; /* urg_gray-700 / 20% */
 }
 
+cap-widget:focus {
+  outline: none;
+}
+
 .cap-widget-wrapper {
   display: block !important;
   margin-bottom: 16px !important;
   clear: both !important;
+}
+
+.forminator-pagination > [data-capconnect-integration="forminator"] .cap-widget-wrapper {
+  padding-top: 16px;
+}
+
+.gform_footer > [data-capconnect-integration="gravityforms"],
+.gform_page_footer > [data-capconnect-integration="gravityforms"] {
+  flex: 0 0 100%;
+  min-width: 0;
 }
 
 .capconnect-error-message {

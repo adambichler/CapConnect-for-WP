@@ -42,12 +42,14 @@ class Capconnect_Integrations
         add_action('login_enqueue_scripts', [$this, 'enqueueNativeFormAssets']);
     }
 
+    /** Protects comments from both visitors and signed-in users. */
     private function initCommentIntegration(): void
     {
         if (! get_option('capconnect_protect_comments', true)) {
             return;
         }
         add_action('comment_form_after_fields', [$this, 'renderWidgetComment']);
+        add_action('comment_form_logged_in_after', [$this, 'renderWidgetComment']);
         add_filter('preprocess_comment', [$this, 'validateCommentToken']);
     }
 
@@ -61,6 +63,7 @@ class Capconnect_Integrations
         }
         add_action('login_form', [$this, 'renderWidgetLogin']);
         add_filter('wp_authenticate_user', [$this, 'validateLoginToken'], 10, 2);
+        add_filter('authenticate', [$this, 'validateFinalLoginToken'], PHP_INT_MAX, 3);
         add_action('wp_login', [$this, 'consumeLoginProof'], PHP_INT_MAX, 2);
         add_action('login_form_validate_2fa', [$this, 'validateTwoFactorLoginProof'], 1);
         add_action('two_factor_user_authenticated', [$this, 'consumeTwoFactorLoginProof'], 10, 2);
@@ -98,7 +101,7 @@ class Capconnect_Integrations
         }
 
         add_filter('gform_submit_button', [$this, 'renderWidgetGravityForms'], 10, 2);
-        add_filter('gform_validation', [$this, 'validateGravityFormsToken']);
+        add_filter('gform_validation', [$this, 'validateGravityFormsToken'], 10, 2);
     }
 
     private function initForminatorIntegration(): void
@@ -112,6 +115,7 @@ class Capconnect_Integrations
         }
 
         add_filter('forminator_render_button_markup', [$this, 'renderWidgetForminator'], 10, 2);
+        add_filter('forminator_pagination_submit_markup', [$this, 'renderWidgetForminatorPagination']);
         add_filter('forminator_custom_form_submit_errors', [$this, 'validateForminatorToken'], 10, 3);
     }
 
@@ -137,6 +141,7 @@ class Capconnect_Integrations
         }
     }
 
+    /** Renders the challenge in the current comment form. */
     public function renderWidgetComment(): void
     {
         $this->widget->enqueueAssets();
@@ -190,6 +195,7 @@ class Capconnect_Integrations
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 
+    /** Rejects unverified comments before WordPress stores them. */
     public function validateCommentToken(array $commentData): array
     {
         $token = $this->getToken();
@@ -242,6 +248,15 @@ class Capconnect_Integrations
         return $user;
     }
 
+    /** Guards the native login after other providers without affecting application-password/API authentication. */
+    public function validateFinalLoginToken($user, string $username, string $password)
+    {
+        if (($GLOBALS['pagenow'] ?? '') !== 'wp-login.php') {
+            return $user;
+        }
+        return $user instanceof \WP_User ? $this->validateLoginToken($user, $password) : $user;
+    }
+
     /**
      * Requires the initial captcha proof before Two-Factor validates its second step.
      */
@@ -281,6 +296,7 @@ class Capconnect_Integrations
         }
     }
 
+    /** Adds CAP failures to native registration errors. */
     public function validateRegisterToken(\WP_Error $errors, string $sanitizedUserLogin, string $userEmail): \WP_Error
     {
         $token = $this->getToken();
@@ -321,7 +337,8 @@ class Capconnect_Integrations
         if (Capconnect_WooCommerce::isHandlingPassword('reset')) {
             return;
         }
-        if (! isset($_POST['cap-token'])) {
+        // Core also fires this hook while initially displaying the reset form.
+        if (! isset($_POST['pass1'])) {
             return;
         }
 
@@ -335,6 +352,7 @@ class Capconnect_Integrations
         }
     }
 
+    /** Marks the challenge for its adapter and preserves CAP styles against Gravity Forms' theme reset. */
     public function renderWidgetGravityForms(string $button, array $form): string
     {
         $this->widget->enqueueAssets();
@@ -342,13 +360,20 @@ class Capconnect_Integrations
         $html = $this->widget->renderForMode();
         if (get_option('capconnect_mode', 'widget') !== 'programmatic') {
             $html = '<div class="cap-widget-wrapper">' . $html . '</div>';
+            $html .= '<div class="capconnect-error-message" role="alert" style="display: none;"></div>';
         }
 
-        return $html . $button;
+        return '<div class="gform-theme__no-reset--children" data-capconnect-integration="gravityforms">' . $html . '</div>' . $button;
     }
 
-    public function validateGravityFormsToken(array $validationResult): array
+    /** Verifies final Gravity Forms submissions while preserving intermediate page validation. */
+    public function validateGravityFormsToken(array $validationResult, string $context = ''): array
     {
+        if ($context === 'form-submit' && class_exists('GFFormDisplay')
+            && ! GFFormDisplay::is_last_page($validationResult['form'])) {
+            return $validationResult;
+        }
+
         $token = $this->getToken();
 
         if (! $this->verifier->verify($token)) {
@@ -357,7 +382,7 @@ class Capconnect_Integrations
             $formId = (int) $validationResult['form']['id'];
             add_filter(
                 "gform_validation_message_{$formId}",
-                fn(string $message): string => '<div class="validation_error">'
+                fn(string $message): string => '<div class="validation_error capconnect-error-message gform-theme__no-reset--el" role="alert">'
                     . esc_html($this->getVerificationFailedMessage())
                     . '</div>'
             );
@@ -369,12 +394,28 @@ class Capconnect_Integrations
     /**
      * Renders the Cap field in Forminator's field structure.
      */
-    public function renderWidgetForminator(string $html, $button): string
+    public function renderWidgetForminator(string $html, $button = null): string
     {
         if (strpos($html, 'forminator-button-submit') === false) {
             return $html;
         }
 
+        return $this->renderForminatorChallenge() . $html;
+    }
+
+    /** Adds the challenge to Forminator's final pagination page. */
+    public function renderWidgetForminatorPagination(string $html): string
+    {
+        if (strpos($html, 'forminator-pagination-submit') === false) {
+            return $html;
+        }
+
+        return $this->renderForminatorChallenge() . $html;
+    }
+
+    /** Builds the shared challenge markup for Forminator forms. */
+    private function renderForminatorChallenge(): string
+    {
         $this->widget->enqueueAssets();
 
         $widgetHtml = $this->widget->renderForMode();
@@ -382,13 +423,12 @@ class Capconnect_Integrations
             $widgetHtml = '<div class="cap-widget-wrapper">' . $widgetHtml . '</div>';
         }
 
-        $widgetHtml = '<div class="forminator-row cap-widget-row"><div class="forminator-col forminator-col-12"><div class="forminator-field">'
+        return '<div class="forminator-row cap-widget-row" data-capconnect-integration="forminator"><div class="forminator-col forminator-col-12"><div class="forminator-field">'
             . $widgetHtml
             . '</div></div></div>';
-
-        return $widgetHtml . $html;
     }
 
+    /** Rejects final Forminator submissions without a valid token. */
     public function validateForminatorToken(array $submit_errors, $form_id, array $field_data_array): array
     {
         $token = $this->getToken();
@@ -400,10 +440,12 @@ class Capconnect_Integrations
         return $submit_errors;
     }
 
+    /** Reads a scalar token; malformed payloads are treated as missing. */
     private function getToken(): string
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the surrounding WordPress/WooCommerce context before this hook runs.
-        return sanitize_text_field(wp_unslash((string) ($_POST['cap-token'] ?? '')));
+        $token = $_POST['cap-token'] ?? '';
+        return is_string($token) ? sanitize_text_field(wp_unslash($token)) : '';
     }
 
     /**

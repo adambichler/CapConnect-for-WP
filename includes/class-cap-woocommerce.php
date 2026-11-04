@@ -118,22 +118,27 @@ class Capconnect_WooCommerce
         ]);
     }
 
-    /** Loads assets early on protected WooCommerce pages, including checkout data dependencies. */
+    /** Preloads enabled WooCommerce integrations, including forms inserted outside Core pages. */
     public function enqueueAssets(bool $force = false): void
     {
-        if ($this->assetsEnqueued || (! $force && ! is_account_page() && ! is_checkout() && ! is_order_received_page())) {
+        if ($this->assetsEnqueued) {
             return;
         }
         $this->assetsEnqueued = true;
         $this->widget->enqueueAssets();
         wp_add_inline_style('capconnect-widget', $this->layoutStyles());
+        $dependencies = ['capconnect-forms', 'wp-data', 'wp-api-fetch', 'jquery'];
+        if (wp_script_is('wc-blocks-checkout-events', 'registered')) {
+            $dependencies[] = 'wc-blocks-checkout-events';
+        }
         wp_enqueue_script('capconnect-woocommerce', CAPCONNECT_PLUGIN_URL . 'assets/js/capconnect-woocommerce.js',
-            ['capconnect-forms', 'wp-data', 'wp-api-fetch'], CAPCONNECT_VERSION, true);
+            $dependencies, CAPCONNECT_VERSION, true);
         wp_add_inline_script('capconnect-woocommerce', 'window.CAPCONNECT_WC = ' . wp_json_encode([
             'mode' => get_option('capconnect_mode', 'widget'),
             'blocks' => ! is_user_logged_in() && self::protects('blocks'),
             'registration' => ! is_user_logged_in() && self::protects('checkout_register'),
             'registrationRequired' => WC()->checkout()->is_registration_required(),
+            'updateRequiredMsg' => __('Bitte aktualisiere WooCommerce, um den geschützten Block-Checkout zu verwenden.', 'capconnect-for-wp'),
         ]) . ';', 'before');
     }
 

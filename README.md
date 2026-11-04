@@ -156,6 +156,16 @@ The shortcode enqueues the assets and inserts a hidden field. The endpoint and t
 
 The legacy `[tpow_programmatic]` shortcode remains supported for existing content.
 
+For a custom AJAX form, reset its Cap state after the request completes, fails, or has an unknown outcome. Call `window.CAPCONNECT_FORMS.reset(form)` for the form that sent the request; this clears its token without starting another challenge or changing other forms. Do not start a new submission of that form until the previous request and its reset have finished. Built-in integrations manage their own resets.
+
+```js
+try {
+  await fetch(form.action, { method: 'POST', body: new FormData(form) });
+} finally {
+  window.CAPCONNECT_FORMS.reset(form);
+}
+```
+
 **Example:**
 
 ```html
