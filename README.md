@@ -32,7 +32,7 @@ The plugin includes the version-pinned Cap widget 0.1.58 and both proof-of-work 
 
 ## Configuration
 
-Access **Settings > CapConnect** in the WordPress administration panel. The options are divided into three tabs:
+Access **Settings > CapConnect** in the WordPress administration panel. The options are divided into **Connection**, **Integrations**, **WooCommerce** (when WooCommerce is active), **Styling**, and **Labels** tabs.
 
 ### Connection
 
@@ -81,7 +81,7 @@ If an **Alert Email** is set, the plugin:
 
 To avoid inbox spam, once an alert is sent, further alerts are muted until the connection recovers successfully (either verified by a successful hourly check, a successful settings page connection test, or when settings are updated).
 
-### Forms
+### Integrations
 
 Toggle protection for individual native forms:
 
@@ -89,8 +89,11 @@ Toggle protection for individual native forms:
 - **Registration Form** (default: checked)
 - **Lost Password Form** (default: checked) - protects both the lost password request and the reset password forms
 - **Comments Form** (default: checked)
-- **WooCommerce** (default: unchecked; enabling it exposes independent WooCommerce settings, all selected by default)
-- **Gravity Forms** (default: checked, only active if Gravity Forms is enabled)
+- **WooCommerce** (default: unchecked; enabling it exposes independent WooCommerce settings, selected by default)
+- **Gravity Forms** (default: checked; active only if Gravity Forms is enabled)
+- **Forminator Forms** (default: checked; active only if Forminator is enabled)
+
+When WooCommerce protection is enabled, its tab provides independent controls for classic checkout, Block Checkout, My Account and checkout login, My Account and checkout registration, post-checkout registration, lost password, and password reset. Checkout protection applies to guest customers. When both checkout and checkout registration protection are enabled, one verification covers the attempt. Express guest payments require a valid token where checkout protection applies.
 
 ### Styling
 
@@ -99,7 +102,10 @@ Customize the look and feel of the visible widget (only active when **Verificati
 - **Widget Container Styles**: Background Color, Text Color, Border Color, and Border Radius (px)
 - **Checkbox Styles**: Checkbox Background, Checkmark Color, Border Color, Border Style, Border Width (px), and Checkbox Border Radius (px)
 - **Spinner Styles**: Spinner Background Color and Spinner Color
+- **Error Message Styles**: background, text, and border colors for integration error messages
 - **Hide Attribution Link**: Hides the "Cap" attribution link in the bottom-right of the widget
+
+The **Labels** tab lets you customize widget status, validation, accessibility, and troubleshooting text. Labels can be translated per language.
 
 ---
 
@@ -116,10 +122,10 @@ The plugin automatically integrates with the following WordPress forms upon acti
 | Registration         | `register_form`                           | `registration_errors`          |
 | Lost Password        | `lostpassword_form`                       | `lostpassword_post`            |
 | Password Reset       | `resetpass_form`                          | `validate_password_reset`      |
-| WooCommerce checkout | `woocommerce_review_order_before_submit` | `woocommerce_checkout_process` |
 | Gravity Forms        | `gform_submit_button`                     | `gform_validation`             |
+| Forminator           | Forminator submit button                  | Forminator submission errors  |
 
-WooCommerce and Gravity Forms integrations are only active if the corresponding plugins are installed and active. WooCommerce also requires the integration switch to be enabled; its account and checkout areas can be configured separately from WordPress forms.
+Gravity Forms and Forminator integrations are only active if the corresponding plugins are installed and active. WooCommerce is configured separately in the WooCommerce tab and supports classic checkout, Block Checkout, customer login and registration, and password recovery.
 
 ### Shortcode `[capconnect_widget]`
 
@@ -219,41 +225,15 @@ Content-Security-Policy:
 
 ## Uninstallation
 
-Uninstalling via the WordPress interface automatically deletes all saved options from the database:
-
-- `capconnect_endpoint`
-- `capconnect_instance_url`
-- `capconnect_site_key`
-- `capconnect_secret`
-- `capconnect_token_field`
-- `capconnect_timeout`
-- `capconnect_fail_open`
-- `capconnect_alert_email`
-- `capconnect_alert_sent`
-- `capconnect_connection_failed_notice`
-- `capconnect_hide_attribution`
-- `capconnect_mode`
-- `capconnect_background`
-- `capconnect_color`
-- `capconnect_border_color`
-- `capconnect_checkbox_background`
-- `capconnect_spinner_color`
-- `capconnect_spinner_background`
-- `capconnect_checkbox_border_color`
-- `capconnect_checkbox_border_style`
-- `capconnect_checkbox_border_width`
-- `capconnect_border_radius`
-- `capconnect_checkbox_border_radius`
-- `capconnect_checkbox_checkmark_color`
-- `capconnect_protect_login`
-- `capconnect_protect_register`
-- `capconnect_protect_lostpassword`
-- `capconnect_protect_comments`
-- `capconnect_protect_woocommerce`
-- `capconnect_protect_gravityforms`
-- `capconnect_protect_forminator`
+Uninstalling through WordPress removes the plugin's saved settings, including legacy `tpow_*` settings, and clears its scheduled connection check.
 
 ## Changelog
+
+### 1.4.5
+
+- Added independent protection controls for WooCommerce checkout, Block Checkout, customer login and registration, and password recovery.
+- Added WooCommerce token validation for guest checkout and registration flows.
+- Fixed the widget attribution link display setting.
 
 ### 1.4.0
 

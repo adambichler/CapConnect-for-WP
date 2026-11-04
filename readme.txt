@@ -4,7 +4,7 @@ Tags: captcha, spam, proof-of-work, comments, login
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.4.1
+Stable tag: 1.4.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,8 +36,9 @@ The Cap widget uses WebAssembly (WASM) for proof-of-work. This plugin bundles th
 * Protects login form
 * Protects registration form
 * Protects lost password and password reset forms
-* Protects WooCommerce guest checkout (classic and Blocks), login, registration, and password forms with independent controls
+* Protects WooCommerce classic and Block Checkout, customer login and registration, and password recovery with independent controls
 * Protects Gravity Forms (if Gravity Forms is active)
+* Protects Forminator forms (if Forminator is active)
 * Shortcode `[capconnect_widget]` for use in any page or form builder
 * Shortcode `[capconnect_programmatic]` for programmatic Cap usage (headless mode)
 * Settings page under **Settings > CapConnect**
@@ -67,16 +68,17 @@ After activation, navigate to **Settings > CapConnect**. The settings are organi
     * **Fail Open** — Allow requests through when the Cap server is unreachable.
     * **Alert Email** — Email address to receive failure notifications. A cron job checks connection hourly, and frontend failures trigger real-time alerts.
 * **Integrations Tab:**
-    * Enable or disable protection for WordPress forms, Gravity Forms, and Forminator.
-    * **Protect WooCommerce** — Always visible and disabled when WooCommerce is inactive; enables a dedicated WooCommerce tab when available.
+    * Enable or disable protection for WordPress forms, Gravity Forms, Forminator, and WooCommerce.
 * **WooCommerce Tab:**
-    * Independently protect classic checkout, Block Checkout, My Account login, checkout login, My Account registration, checkout registration, post-order registration, lost password, and password reset.
-    * Checkout protection applies to guests only. Checkout registration can be protected even when order protection is off; enabling both requires only one verification per attempt.
+    * Independently protect classic checkout, Block Checkout, My Account login, checkout login, My Account registration, checkout registration, post-checkout registration, lost password, and password reset.
+    * Checkout protection applies to guests. Checkout registration can be protected even when order protection is off; enabling both requires only one verification per attempt.
     * WooCommerce protection is off until the integration switch is enabled. All individual areas are selected by default; you can disable them independently. Turning off the integration switch preserves individual settings.
     * Express guest payments require a valid token when protection applies. Additional account or social-login plugins require separate integrations.
 * **Styling Tab:**
-    * Customize background colors, text colors, borders, checkmark, and spinner styles for the visible widget (only active in Widget mode).
+    * Customize widget colors, borders, checkmark and spinner styles, and integration error message colors.
     * **Hide Attribution Link** — Toggle to hide the "Cap" link at the bottom-right of the widget.
+* **Labels Tab:**
+    * Customize widget status, validation, accessibility, and troubleshooting text, with per-language translations.
 
 = Administrator login recovery =
 
@@ -100,15 +102,15 @@ No. You need to run your own Cap instance. See [github.com/tiagozip/cap](https:/
 
 = Does Cap track users or collect personal data? =
 
-No. Cap is a proof-of-work system: it runs a computation in the browser and does not collect personal data, set cookies, or make requests to third-party servers.
+Cap itself is a proof-of-work system: it runs a computation in the browser and does not collect personal data or make requests to third-party servers. The optional administrator login recovery flow uses a short-lived cookie after recovery is explicitly confirmed.
 
 = Is WooCommerce support automatic? =
 
 Enable **Protect WooCommerce** under **Settings > CapConnect > Integrations**, review the selected areas in the WooCommerce tab, and save. All WooCommerce areas are selected by default and can be disabled independently.
 
-= Is Gravity Forms support automatic? =
+= Are Gravity Forms and Forminator supported? =
 
-Yes. If Gravity Forms is active, the Cap widget is automatically prepended to the submit button of every Gravity Forms form. Validation errors are displayed as a form-level message.
+Yes. If either plugin is active and its integration is enabled in **Settings > CapConnect > Integrations**, CapConnect adds verification to its forms and rejects submissions without a valid token.
 
 = What is the shortcode? =
 
@@ -117,6 +119,11 @@ Use `[capconnect_widget]` to embed the Cap widget in any page or custom form.
 The legacy `[tpow_widget]` and `[tpow_programmatic]` shortcodes continue to work for existing content.
 
 == Changelog ==
+
+= 1.4.5 =
+* Added independent protection settings for WooCommerce checkout, Block Checkout, account login and registration, and password recovery.
+* Added WooCommerce token validation for guest checkout and registration flows.
+* Fixed the widget attribution link display setting.
 
 = 1.4.1 =
 * Updated the bundled Cap widget to 0.1.58 and added local HashWX WASM support.
