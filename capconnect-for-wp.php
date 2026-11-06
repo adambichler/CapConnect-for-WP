@@ -3,7 +3,7 @@
  * Plugin Name:       CapConnect for WP
  * Plugin URI:        https://github.com/adambichler/CapConnect-for-WP
  * Description:       Integrates the open-source TryCap widget into WordPress comments, login, registration, lost password, WooCommerce checkout and customer accounts, and Gravity Forms.
- * Version:           1.4.5
+ * Version:           1.4.6
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Adam Bichler
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('CAPCONNECT_VERSION', '1.4.5');
+define('CAPCONNECT_VERSION', '1.4.6');
 define('CAPCONNECT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CAPCONNECT_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -61,6 +61,7 @@ $pucChecker->getVcsApi()->enableReleaseAssets();
 
 require_once CAPCONNECT_PLUGIN_DIR . 'includes/class-cap-verifier.php';
 require_once CAPCONNECT_PLUGIN_DIR . 'includes/class-cap-settings.php';
+require_once CAPCONNECT_PLUGIN_DIR . 'includes/class-cap-monitor.php';
 require_once CAPCONNECT_PLUGIN_DIR . 'includes/class-cap-widget.php';
 require_once CAPCONNECT_PLUGIN_DIR . 'includes/class-cap-login-recovery.php';
 require_once CAPCONNECT_PLUGIN_DIR . 'includes/class-cap-login-proof.php';
@@ -80,6 +81,7 @@ foreach ([
 }
 
 (new Capconnect_Settings())->init();
+(new Capconnect_Monitor())->init();
 (new Capconnect_Widget())->init();
 
 add_action('plugins_loaded', function(): void {
@@ -105,6 +107,7 @@ function capconnect_deactivate_plugin(): void
 {
     wp_clear_scheduled_hook('capconnect_hourly_connection_check');
     wp_clear_scheduled_hook('tpow_hourly_connection_check');
+    wp_clear_scheduled_hook('capconnect_monitor_check');
 }
 
 /**

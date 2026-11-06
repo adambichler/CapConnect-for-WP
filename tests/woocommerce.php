@@ -19,6 +19,7 @@ namespace {
         exit;
     }
     define('ABSPATH', __DIR__);
+    define('DAY_IN_SECONDS', 86400);
     define('CAPCONNECT_PLUGIN_URL', 'https://example.test/plugin/');
     define('CAPCONNECT_VERSION', 'test');
     $options = [];
@@ -115,6 +116,8 @@ namespace {
     }
     /** Reads memory-only options, respecting explicit defaults like WordPress. */
     function get_option($key, $default = false) { global $options, $registered; return $options[$key] ?? (func_num_args() > 1 ? $default : ($registered[$key]['default'] ?? $default)); }
+    /** Updates diagnostic options only in memory. */
+    function update_option($key, $value, $autoload = null): bool { $GLOBALS['options'][$key] = $value; return true; }
     /** Records registered settings without touching a database. */
     function register_setting($group, $key, $args): void { $GLOBALS['registered'][$key] = $args; }
     /** Records settings sections for UI assertions. */
@@ -261,6 +264,7 @@ namespace {
     }
 
     require __DIR__ . '/../includes/class-cap-settings.php';
+    require __DIR__ . '/../includes/class-cap-monitor.php';
     require __DIR__ . '/../includes/class-cap-widget.php';
     require __DIR__ . '/../includes/class-cap-woocommerce.php';
     require __DIR__ . '/../includes/class-cap-integrations.php';

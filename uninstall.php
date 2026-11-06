@@ -11,10 +11,11 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 
 wp_clear_scheduled_hook('capconnect_hourly_connection_check');
 wp_clear_scheduled_hook('tpow_hourly_connection_check');
+wp_clear_scheduled_hook('capconnect_monitor_check');
 
 $option_suffixes = [
     'endpoint', 'instance_url', 'site_key', 'secret', 'token_field', 'timeout', 'fail_open',
-    'alert_email', 'alert_sent', 'connection_failed_notice', 'hide_attribution', 'mode',
+    'alert_email', 'alert_sent', 'connection_failed_notice', 'debug_log', 'log_retention', 'monitor_state', 'monitor_lock', 'hide_attribution', 'mode',
     'background', 'color', 'border_color', 'border_radius', 'checkbox_background',
     'checkbox_checkmark_color', 'checkbox_border_color', 'checkbox_border_style',
     'checkbox_border_width', 'checkbox_border_radius', 'spinner_color', 'spinner_background',
@@ -40,5 +41,6 @@ foreach (['capconnect_', 'tpow_'] as $prefix) {
     }
 }
 
+delete_transient('capconnect_probe_throttle');
 delete_option('capconnect_prefix_migration_version');
 delete_metadata('user', 0, 'capconnect_woocommerce_notice_dismissed_' . get_current_blog_id(), '', true);

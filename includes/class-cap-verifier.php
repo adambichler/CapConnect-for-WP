@@ -58,10 +58,10 @@ class Capconnect_Verifier
             return false;
         }
 
-        // Connection succeeded (we got a valid response from the server):
-        // clear the failure notice and alert sent state.
-        delete_option('capconnect_connection_failed_notice');
-        delete_option('capconnect_alert_sent');
+        // Confirm recovery against both endpoints without delaying successful submissions.
+        if ($data['success'] && get_option('capconnect_monitor_state')) {
+            Capconnect_Monitor::schedule();
+        }
 
         return $data['success'];
     }

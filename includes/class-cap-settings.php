@@ -60,6 +60,7 @@ class Capconnect_Settings
         add_action('update_option_capconnect_site_key', [$this, 'handleCredentialUpdate']);
         add_action('update_option_capconnect_secret', [$this, 'handleCredentialUpdate']);
         add_action('update_option_capconnect_alert_email', [$this, 'clearAlertSent']);
+        add_action('update_option_capconnect_alert_email', [Capconnect_Monitor::class, 'recipientChanged']);
 
         // Settings link on the plugins list page
         $plugin_file = CAPCONNECT_PLUGIN_DIR . 'capconnect-for-wp.php';
@@ -275,6 +276,12 @@ class Capconnect_Settings
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_email',
             'default'           => '',
+        ]);
+
+        register_setting('capconnect_settings_group', 'capconnect_log_retention', [
+            'type' => 'integer',
+            'sanitize_callback' => [self::class, 'sanitizeLogRetention'],
+            'default' => 30,
         ]);
 
         register_setting('capconnect_settings_group', 'capconnect_hide_attribution', [
@@ -552,6 +559,14 @@ class Capconnect_Settings
             'capconnect_fail_open',
             __('Fail Open', 'capconnect-for-wp'),
             [$this, 'renderFailOpenField'],
+            'capconnect-settings',
+            'capconnect_main_section'
+        );
+
+        add_settings_field(
+            'capconnect_log_retention',
+            __('Debug log retention (days)', 'capconnect-for-wp'),
+            [$this, 'renderLogRetentionField'],
             'capconnect-settings',
             'capconnect_main_section'
         );
@@ -977,6 +992,7 @@ class Capconnect_Settings
                     <a href="#woocommerce" class="nav-tab" data-tab="woocommerce"<?php echo Capconnect_WooCommerce::isEnabled() ? '' : ' hidden style="display: none;"'; ?>><?php esc_html_e('WooCommerce', 'capconnect-for-wp'); ?></a>
                 <?php endif; ?>
                 <a href="#styling" class="nav-tab" data-tab="styling"><?php esc_html_e('Styling', 'capconnect-for-wp'); ?></a>
+                <a href="#debug" class="nav-tab" data-tab="debug"><?php esc_html_e('Debug', 'capconnect-for-wp'); ?></a>
                 <a href="#labels" class="nav-tab" data-tab="labels"><?php esc_html_e('Labels', 'capconnect-for-wp'); ?></a>
             </div>
 
@@ -1026,6 +1042,10 @@ class Capconnect_Settings
                 <!-- Labels Tab -->
                 <div id="capconnect-tab-labels" class="capconnect-tab-content" style="display: none;">
                     <?php $this->renderSettingsSection('capconnect-settings', 'capconnect_labels_section'); ?>
+                </div>
+
+                <div id="capconnect-tab-debug" class="capconnect-tab-content" style="display: none;">
+                    <?php Capconnect_Monitor::render(); ?>
                 </div>
 
                 <div class="capconnect-submit-wrapper">
@@ -1251,6 +1271,18 @@ class Capconnect_Settings
         echo esc_html__('Allow requests through when the Cap server is unreachable (not recommended for high-security forms).', 'capconnect-for-wp') . '</label>';
     }
 
+    /** Limits the diagnostic retention period to supported whole days. */
+    public static function sanitizeLogRetention($value): int
+    {
+        return max(1, min(3650, (int) $value));
+    }
+
+    /** Renders the diagnostic retention setting. */
+    public function renderLogRetentionField(): void
+    {
+        echo '<input type="number" name="capconnect_log_retention" min="1" max="3650" value="' . esc_attr((string) Capconnect_Monitor::retention()) . '" />';
+    }
+
     /**
      * Renders alert and account-recovery email guidance.
      */
@@ -1258,7 +1290,7 @@ class Capconnect_Settings
     {
         $value = get_option('capconnect_alert_email', '');
         echo '<input type="email" name="capconnect_alert_email" value="' . esc_attr($value) . '" class="regular-text" placeholder="admin@example.com" />';
-        echo '<p class="description">' . esc_html__('Get notified by email if the connection to your Cap server fails (either during the hourly check or on a frontend verification attempt). Leave empty to disable alerts.', 'capconnect-for-wp') . '</p>';
+        echo '<p class="description">' . esc_html__('Get notified by email after a connection or configuration problem is confirmed. Leave empty to disable alerts.', 'capconnect-for-wp') . '</p>';
         echo '<p class="description">' . esc_html__('Login recovery emails are sent separately to the email address stored on the requested administrator account. Recovery requires working WordPress email delivery.', 'capconnect-for-wp') . '</p>';
     }
 
@@ -1514,6 +1546,7 @@ class Capconnect_Settings
             'capconnect_timeout',
             'capconnect_fail_open',
             'capconnect_alert_email',
+            'capconnect_log_retention',
             'capconnect_alert_sent',
             'capconnect_connection_failed_notice',
             'capconnect_hide_attribution',
@@ -1615,6 +1648,7 @@ class Capconnect_Settings
         exit;
     }
 
+    /** Checks the configured challenge and verification endpoints. */
     public static function checkConnection(string $instance_url = '', string $site_key = '', string $secret = ''): array
     {
         if ($instance_url === '') {
@@ -1631,6 +1665,7 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => __('No instance URL configured.', 'capconnect-for-wp'),
+                'type' => 'configuration',
             ];
         }
 
@@ -1638,6 +1673,7 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => __('No Site Key configured.', 'capconnect-for-wp'),
+                'type' => 'configuration',
             ];
         }
 
@@ -1645,6 +1681,7 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => __('Secret Key is empty.', 'capconnect-for-wp'),
+                'type' => 'configuration',
             ];
         }
 
@@ -1684,6 +1721,7 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => $response->get_error_message(),
+                'reason' => 'Challenge: transport error',
             ];
         }
 
@@ -1706,6 +1744,8 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => $error_msg,
+                'type' => ($code >= 400 && $code < 500 && $code !== 408 && $code !== 429) ? 'configuration' : 'connection',
+                'reason' => 'Challenge: HTTP ' . (int) $code,
             ];
         }
 
@@ -1716,6 +1756,8 @@ class Capconnect_Settings
                 return [
                     'success' => false,
                     'message' => __('Unauthorized origin. The Cap server has restricted access to other domains.', 'capconnect-for-wp'),
+                    'type' => 'configuration',
+                    'reason' => 'Challenge: origin not allowed',
                 ];
             }
         }
@@ -1738,6 +1780,7 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => __('Failed to contact siteverify endpoint.', 'capconnect-for-wp') . ' ' . $verify_response->get_error_message(),
+                'reason' => 'Siteverify: transport error',
             ];
         }
 
@@ -1755,6 +1798,8 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => __('Siteverify endpoint not found (HTTP 404). Check your instance URL.', 'capconnect-for-wp'),
+                'reason' => 'Siteverify: HTTP 404',
+                'type' => 'configuration',
             ];
         }
 
@@ -1766,6 +1811,8 @@ class Capconnect_Settings
             return [
                 'success' => false,
                 'message' => $error_msg,
+                'type' => 'configuration',
+                'reason' => 'Siteverify: HTTP 403',
             ];
         }
 
@@ -1783,49 +1830,22 @@ class Capconnect_Settings
         return [
             'success' => false,
             'message' => $error_msg,
+            'type' => ($verify_code >= 400 && $verify_code < 500 && $verify_code !== 408 && $verify_code !== 429) ? 'configuration' : 'connection',
+            'reason' => 'Siteverify: HTTP ' . (int) $verify_code,
         ];
     }
 
+    /** Schedules a server-side check after a verification failure. */
     public static function sendAlertEmail(string $errorMessage): void
     {
-        // Set/update the persistent connection failure notice option
-        update_option('capconnect_connection_failed_notice', $errorMessage);
-
-        $email = get_option('capconnect_alert_email', '');
-        if (empty($email)) {
-            return;
-        }
-
-        // Prevent email spam by checking if alert was already sent for the current downtime
-        if (get_option('capconnect_alert_sent')) {
-            return;
-        }
-
-        $subject = sprintf(
-            '[%s] Cap Connection Failed',
-            get_bloginfo('name')
-        );
-
-        $body = sprintf(
-            "Hello,\n\nThe connection to your self-hosted Cap server failed.\n\nError details: %s\n\nPlease check your server and configuration.\n\nBest regards,\nCapConnect for WP",
-            $errorMessage
-        );
-
-        $sent = wp_mail($email, $subject, $body);
-        if ($sent) {
-            update_option('capconnect_alert_sent', time());
-        }
+        Capconnect_Monitor::log('verification', 'Verification request failed');
+        Capconnect_Monitor::schedule();
     }
 
+    /** Runs the periodic connection check through the confirmation workflow. */
     public function runHourlyCheck(): void
     {
-        $result = self::checkConnection();
-        if ($result['success']) {
-            $this->clearAlertSent();
-            delete_option('capconnect_connection_failed_notice');
-        } else {
-            self::sendAlertEmail($result['message']);
-        }
+        Capconnect_Monitor::check();
     }
 
     /**
@@ -1854,13 +1874,8 @@ class Capconnect_Settings
      */
     public function verifyUpdatedCredentials(): void
     {
-        $this->clearAlertSent();
-        $result = self::checkConnection();
-        if ($result['success']) {
-            delete_option('capconnect_connection_failed_notice');
-        } else {
-            update_option('capconnect_connection_failed_notice', $result['message']);
-        }
+        Capconnect_Monitor::recovered();
+        Capconnect_Monitor::schedule();
     }
 
     /** Displays the WooCommerce opt-in notice until this administrator dismisses it. */
@@ -1980,7 +1995,7 @@ class Capconnect_Settings
                 <?php
                 echo sprintf(
                     /* translators: 1: error message, 2: settings link HTML */
-                    esc_html__('Connection to the Cap server is failing. Error: %1$s. Please check your %2$s.', 'capconnect-for-wp'),
+                    esc_html__('A Cap connection or configuration problem was detected: %1$s. Please check your %2$s.', 'capconnect-for-wp'),
                     esc_html($error),
                     '<a href="' . esc_url($settings_url) . '">' . esc_html__('settings', 'capconnect-for-wp') . '</a>'
                 );
@@ -2007,11 +2022,8 @@ class Capconnect_Settings
 
         $result = self::checkConnection($instance_url, $site_key, $secret);
         if ($result['success']) {
-            $this->clearAlertSent();
-            delete_option('capconnect_connection_failed_notice');
             wp_send_json_success($result);
         } else {
-            update_option('capconnect_connection_failed_notice', $result['message']);
             wp_send_json_error($result);
         }
     }
@@ -2026,7 +2038,7 @@ class Capconnect_Settings
         $error_message = isset($_POST['error_message']) ? sanitize_text_field(wp_unslash($_POST['error_message'])) : '';
 
         if (! empty($error_message)) {
-            self::sendAlertEmail($error_message);
+            Capconnect_Monitor::browserError($error_message);
             wp_send_json_success();
         }
 

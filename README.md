@@ -32,7 +32,7 @@ The plugin includes the version-pinned Cap widget 0.1.58 and both proof-of-work 
 
 ## Configuration
 
-Access **Settings > CapConnect** in the WordPress administration panel. The options are divided into **Connection**, **Integrations**, **WooCommerce** (when WooCommerce is active), **Styling**, and **Labels** tabs.
+Access **Settings > CapConnect** in the WordPress administration panel. The options are divided into **Connection**, **Integrations**, **WooCommerce** (when WooCommerce is active), **Styling**, **Debug**, and **Labels** tabs.
 
 ### Connection
 
@@ -44,7 +44,8 @@ Access **Settings > CapConnect** in the WordPress administration panel. The opti
 | Secret Key        | Secret key generated in the Cap dashboard (never expose on the client side)                                             | —                  |
 | Timeout (seconds) | Delay before abandoning the request to `/siteverify`                                                                    | `5`                |
 | Fail Open         | If checked, lets the request through in case of communication error with Cap                                            | unchecked          |
-| Alert Email       | Email address to receive notifications if connection to the Cap server fails. Leave blank to disable alerts.            | —                  |
+| Alert Email       | Email address to receive notifications after a connection or configuration problem is confirmed. Leave blank to disable alerts. | —                  |
+| Debug log retention (days) | Retention period for diagnostic entries, from 1 to 3650 days. | `30` |
 
 #### Administrator login recovery
 
@@ -74,12 +75,11 @@ By default, any communication error with the Cap instance (network, timeout, 5xx
 
 **An explicitly invalid token (`success: false`) is always rejected**, regardless of this setting.
 
-If an **Alert Email** is set, the plugin:
+The plugin checks both the challenge and verification endpoints hourly. Verification request errors schedule an additional check. Browser errors are recorded separately; a browser "Failed to fetch" error can schedule a server check, but browser errors alone do not trigger alerts.
 
-1. Runs an hourly cron job that tests connection to the Cap server (by requesting a new challenge). If it fails, an email alert is sent.
-2. Monitors frontend validation requests. If a connection failure (network timeout/error, or non-2xx status code) occurs during a frontend captcha completion, an email alert is sent immediately.
+Connection and configuration problems must fail two checks of the same category at least 60 seconds apart before an administrator notice is displayed. If an **Alert Email** is set, the confirmed incident also sends one email. Failed mail delivery is retried. Scheduled checks depend on working WordPress cron; on low-traffic sites they may run later than scheduled.
 
-To avoid inbox spam, once an alert is sent, further alerts are muted until the connection recovers successfully (either verified by a successful hourly check, a successful settings page connection test, or when settings are updated).
+Further emails for the same incident are suppressed until a full connection check confirms recovery. Successful token validation during an incident schedules that recovery check without waiting for it before accepting the form. Saving changed credentials resets the incident and schedules a fresh check. The settings page's **Test connection** button tests the entered values without changing the stored incident state.
 
 ### Integrations
 
@@ -104,6 +104,12 @@ Customize the look and feel of the visible widget (only active when **Verificati
 - **Spinner Styles**: Spinner Background Color and Spinner Color
 - **Error Message Styles**: background, text, and border colors for integration error messages
 - **Hide Attribution Link**: Hides the "Cap" attribution link in the bottom-right of the widget
+
+### Debug
+
+The **Debug** tab shows administrator-only diagnostics grouped by category and time. Browser messages are mapped to fixed event names; arbitrary browser messages, visitor data, and credentials are not stored in this log. Browser events are sampled at most once every 10 seconds per event type. The log holds at most 500 groups and removes entries older than the configured retention period.
+
+### Labels
 
 The **Labels** tab lets you customize widget status, validation, accessibility, and troubleshooting text. Labels can be translated per language.
 
@@ -225,9 +231,16 @@ Content-Security-Policy:
 
 ## Uninstallation
 
-Uninstalling through WordPress removes the plugin's saved settings, including legacy `tpow_*` settings, and clears its scheduled connection check.
+Uninstalling through WordPress removes the plugin's saved settings, diagnostic log, and monitor state, including legacy `tpow_*` settings, and clears its scheduled connection checks.
 
 ## Changelog
+
+### 1.4.6
+
+- Added an administrator debug log with aggregated events, bounded storage, and configurable retention.
+- Confirm connection and configuration failures with delayed server checks before sending alerts; browser errors alone no longer trigger outage emails.
+- Retry failed alert delivery and check for recovery after successful form validation so later incidents can trigger new alerts.
+- Updated the isolated test environment for the monitor and added regression coverage for recovery and repeated outages.
 
 ### 1.4.5
 
